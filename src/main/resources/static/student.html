@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Hive | Student Portal</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+  <div class="theme-switcher" style="padding: 20px; border-top: 1px solid var(--border); margin-top: 20px;">
+    <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase;">Theme</p>
+    <div style="display: flex; gap: 10px;">
+      <button onclick="setTheme('light')" class="theme-btn" title="Light Mode" style="background:#fff; border:1px solid #ccc; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+      <button onclick="setTheme('hive')" class="theme-btn" title="Hive Classic" style="background:#D4880A; border:none; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+      <button onclick="setTheme('midnight')" class="theme-btn" title="Midnight" style="background:#1C222D; border:1px solid #38BDF8; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+    </div>
+  </div>
+  <div style="display: flex; align-items: center; margin-bottom: 40px;">
+    <div class="sb-hex"><i class="fa-solid fa-graduation-cap"></i></div>
+    <div class="brand-title">The Hive</div>
+  </div>
+  <div class="nav-item active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-house"></i> Dashboard</div>
+  <div class="nav-item" onclick="switchTab('qa', this)"><i class="fa-solid fa-comments"></i> Q&A Board</div>
+  <div class="nav-item" onclick="switchTab('resources', this)"><i class="fa-solid fa-book-open"></i> Resources & Library</div>
+  <div class="nav-item" onclick="switchTab('assignments', this)"><i class="fa-solid fa-clipboard-list"></i> Assignments</div>
+  <div class="nav-item" onclick="switchTab('sessions', this)"><i class="fa-solid fa-video"></i> Video Sessions</div>
+
+  <div class="nav-item" style="margin-top: auto; color: var(--danger); background: rgba(255, 76, 76, 0.1);" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+</div>
+
+<div class="main">
+  <div id="global-banner" style="display:none; background: #FF4C4C; color: white; padding: 12px 20px; text-align: center; font-weight: bold; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(255, 76, 76, 0.2);">
+    <i class="fa-solid fa-bullhorn" style="margin-right: 10px;"></i> <span id="banner-text"></span>
+  </div>
+
+  <div class="header">
+    <div><h1 id="welcome-text">Welcome back</h1><p>Ready to earn some skill points today?</p></div>
+    <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+  </div>
+
+  <div id="view-dashboard" class="view-section active">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-title">My Skill Points</div><div class="stat-val" id="user-points" style="color:var(--gold);">0</div></div>
+      <div class="stat-card"><div class="stat-title">Community Questions</div><div class="stat-val" id="stat-questions">--</div></div>
+    </div>
+  </div>
+
+  <div id="view-qa" class="view-section">
+    <div class="content-grid">
+      <div class="panel">
+        <h2>Community Questions</h2>
+        <div id="questions-container" style="display: grid; gap: 10px;">Loading...</div>
+      </div>
+      <div class="panel">
+        <h2>Ask the Hive</h2>
+        <input type="text" id="q-title" placeholder="What's your question?">
+        <input type="text" id="q-subject" placeholder="Subject (e.g., Math)">
+        <button class="btn-gold" onclick="postQuestion()">Post Question</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-resources" class="view-section">
+    <div class="content-grid">
+      <div class="panel">
+        <h2>Course Materials</h2>
+        <div style="display:flex; gap:10px; margin-bottom: 20px;">
+          <input type="text" id="r-search" placeholder="Course ID (e.g. CS101)">
+          <button class="btn-gold" style="width: 120px;" onclick="fetchResources()">Find</button>
+        </div>
+        <div id="resources-container" style="display: grid; gap: 10px;">Search a course...</div>
+      </div>
+      <div class="panel">
+        <h2>Global Library Search</h2>
+        <p style="font-size: 13px; color: var(--text-2); margin-bottom: 15px;">Search millions of online books via Open Library.</p>
+        <div style="display:flex; gap:10px; margin-bottom: 20px;">
+          <input type="text" id="book-search" placeholder="Search topic or title...">
+          <button class="btn-gold" style="width: 120px;" onclick="searchBooks()">Search</button>
+        </div>
+        <div id="books-container" style="display: grid; gap: 10px;">Search results will appear here...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-assignments" class="view-section">
+    <div class="panel"><h2>Pending Assignments</h2><div id="assignments-container" style="display:grid; gap:10px;">Loading...</div></div>
+  </div>
+
+  <div id="view-sessions" class="view-section">
+    <div class="panel">
+      <h2>Upcoming Live Sessions</h2>
+      <div id="sessions-container" style="display:grid; gap:10px;">Loading...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const user = JSON.parse(localStorage.getItem('hive_user'));
+  if (!user || user.role !== 'student') window.location.href = "index.html";
+
+  document.getElementById('welcome-text').innerText = `Welcome, ${user.name}`;
+  document.getElementById('user-points').innerText = user.points;
+
+  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('mobile-open'); }
+
+  function switchTab(tabId, element) {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+      document.getElementById('view-' + tabId).classList.add('active');
+
+      if(tabId === 'qa') fetchQuestions();
+      if(tabId === 'assignments') fetchAssignments();
+      if(tabId === 'sessions') fetchSessions();
+  }
+
+  // FIXED: Added Broadcast Check Function
+  async function checkBroadcast() {
+      try {
+          const res = await fetch('/api/admin/broadcast/latest');
+          const data = await res.json();
+          if(data && data.message) {
+              document.getElementById('global-banner').style.display = 'block';
+              document.getElementById('banner-text').innerText = data.message;
+          }
+      } catch(e) { console.log("No active broadcasts."); }
+  }
+
+  // Q&A Logic
+  async function fetchQuestions() {
+      const res = await fetch('/api/hive/questions');
+      const data = await res.json();
+      document.getElementById('stat-questions').innerText = data.length;
+      document.getElementById('questions-container').innerHTML = data.map(q => `
+          <div class="item-card">
+              <div><strong>${q.title}</strong><br><span style="font-size:12px; color:var(--text-2);">${q.subject}</span></div>
+              ${!q.answered ? `<button class="btn-action" onclick="answerPrompt(${q.id})">Answer</button>` : '<span>✓</span>'}
+          </div>
+      `).join('');
+  }
+
+  async function postQuestion() {
+      const title = document.getElementById('q-title').value, subject = document.getElementById('q-subject').value;
+      if(!title || !subject) return;
+      await fetch('/api/hive/questions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, subject, difficulty: "Medium", authorName: user.name }) });
+      document.getElementById('q-title').value = '';
+      document.getElementById('q-subject').value = '';
+      fetchQuestions();
+  }
+
+  async function answerPrompt(id) {
+      const text = prompt("Enter your answer to help your peer:");
+      if(text) {
+          await fetch(`/api/hive/questions/${id}/answers`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text, authorName: user.name })
+          });
+          alert("Answer posted! +10 points.");
+
+          user.points += 10;
+          localStorage.setItem('hive_user', JSON.stringify(user));
+          document.getElementById('user-points').innerText = user.points;
+
+          fetchQuestions();
+      }
+  }
+
+  async function fetchResources() {
+      const course = document.getElementById('r-search').value;
+      if(!course) return;
+      document.getElementById('resources-container').innerHTML = "Searching...";
+      const data = await (await fetch(`/api/hive/resources/${course}`)).json();
+      document.getElementById('resources-container').innerHTML = data.map(r => `
+          <div class="item-card"><div><strong>${r.title}</strong></div><a href="${r.link}" target="_blank" class="btn-action">Open</a></div>
+      `).join('') || "No local files found.";
+  }
+
+  async function searchBooks() {
+      const query = document.getElementById('book-search').value;
+      if(!query) return;
+      document.getElementById('books-container').innerHTML = "Searching global library...";
+      try {
+          const res = await fetch(`/api/hive/books/${query}`);
+          const data = await res.json();
+          if(data.docs && data.docs.length > 0) {
+              document.getElementById('books-container').innerHTML = data.docs.map(book => `
+                  <div class="item-card" style="flex-direction:column; align-items:flex-start;">
+                      <div style="font-weight:bold;">${book.title}</div>
+                      <div style="font-size:12px; color:var(--text-2); margin-bottom: 10px;">By: ${book.author_name ? book.author_name.join(', ') : 'Unknown'}</div>
+                      <a href="https://openlibrary.org${book.key}" target="_blank" class="btn-action" style="width:100%; text-align:center;">Read Online</a>
+                  </div>
+              `).join('');
+          } else {
+              document.getElementById('books-container').innerHTML = "No books found.";
+          }
+      } catch(e) { document.getElementById('books-container').innerHTML = "Library service unavailable."; }
+  }
+
+  async function fetchAssignments() {
+      const data = await (await fetch('/api/hive/assignments/all')).json();
+      document.getElementById('assignments-container').innerHTML = data.map(a => `
+          <div class="item-card" style="flex-direction:column; align-items:flex-start;">
+              <strong>${a.title}</strong><div style="font-size:14px; margin: 5px 0;">${a.description}</div>
+              <div style="font-size:12px; color: var(--danger);">Deadline: ${new Date(a.deadline).toLocaleString()}</div>
+              <button class="btn-action" style="margin-top:10px;" onclick="submitAssignment(${a.id})">Submit Work</button>
+          </div>
+      `).join('') || "No active assignments.";
+  }
+
+  function submitAssignment(id) {
+      const content = prompt("Enter submission text or document link:");
+      if(content) fetch(`/api/hive/assignments/${id}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentName: user.name, content }) }).then(async (res) => {
+          if(res.ok) alert("Assignment Submitted Successfully.");
+          else alert(await res.text());
+      });
+  }
+
+  async function fetchSessions() {
+      try {
+          const data = await (await fetch('/api/hive/sessions')).json();
+          document.getElementById('sessions-container').innerHTML = data.map(s => `
+              <div class="item-card">
+                  <div>
+                      <strong>${s.topic}</strong> (${s.subject})<br>
+                      <span style="font-size:12px; color:var(--text-2);">Host: ${s.host} | Time: ${new Date(s.scheduledTime).toLocaleString()}</span>
+                  </div>
+                  <a href="${s.meetingLink}" target="_blank" class="btn-action" style="text-decoration:none; background: var(--gold); color: white; border: none;">Join Meeting</a>
+              </div>
+          `).join('') || "No upcoming sessions at the moment.";
+      } catch(e) { document.getElementById('sessions-container').innerHTML = "Error loading sessions."; }
+  }
+
+  function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
+
+  // Load initial data
+  fetchQuestions();
+  checkBroadcast(); // INITIAL CALL ADDED
+
+  function setTheme(themeName) {
+    // Remove existing theme classes
+    document.body.classList.remove('light-mode', 'midnight-mode');
+
+    // Add the selected one
+    if (themeName === 'light') document.body.classList.add('light-mode');
+    if (themeName === 'midnight') document.body.classList.add('midnight-mode');
+
+    // Save to browser memory
+    localStorage.setItem('hive_theme', themeName);
+}
+
+// Check for saved theme on page load
+function initTheme() {
+    const savedTheme = localStorage.getItem('hive_theme');
+    if (savedTheme) {
+        setTheme(savedTheme);
+    }
+}
+
+// Call initTheme at the start of your script
+initTheme();
+</script>
+</body>
+</html>

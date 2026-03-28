@@ -1,0 +1,195 @@
+package org.example;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/hive")
+@CrossOrigin(origins = "*")
+public class HiveController {
+
+    private final ContentDAO contentDAO = new ContentDAO();
+    private final UserDAO    userDAO    = new UserDAO();
+    private static final String UPLOAD_DIR = "uploads/";
+
+    // ══════════════════════════════════════════════════════
+    // AUTHENTICATION
+    // ══════════════════════════════════════════════════════
+
+    @PostMapping("/register")
+    public ResponseEntity<String> register(@RequestBody Map<String,String> body) {
+        String role = body.get("role");
+        User u = "teacher".equalsIgnoreCase(role)
+                ? new Teacher(body.get("name"), body.get("email"), "Staff")
+                : new Student(body.get("name"), body.get("email"));
+        boolean saved = userDAO.saveUser(u, body.get("password"), role);
+        if (!saved) return ResponseEntity.status(409).body("Email already in use.");
+        return ResponseEntity.ok("Registered successfully.");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<Map<String,Object>> login(@RequestBody Map<String,String> body) {
+        User u = userDAO.login(body.get("email"), body.get("password"));
+        if (u == null) return ResponseEntity.status(401).build();
+
+        Map<String,Object> res = new LinkedHashMap<>();
+        res.put("name",   u.getName());
+        res.put("email",  u.getEmail());
+        res.put("points", u.getPoints());
+
+        // God-Mode Routing: Detects exact Java Object type for the frontend
+        String role = "student";
+        if (u instanceof Admin) {
+            role = "admin";
+        } else if (u instanceof Teacher) {
+            role = "teacher";
+        }
+
+        res.put("role", role);
+        return ResponseEntity.ok(res);
+    }
+
+    // ══════════════════════════════════════════════════════
+    // BROADCASTS (Added for Banner Logic)
+    // ══════════════════════════════════════════════════════
+
+    @GetMapping("/broadcast/latest")
+    public ResponseEntity<Map<String, String>> getLatestAnnouncement() {
+        // This links to the announcements table we created in MySQL
+        Map<String, String> announcement = contentDAO.getLatestAnnouncement();
+        return ResponseEntity.ok(announcement);
+    }
+
+    // ══════════════════════════════════════════════════════
+    // QUESTIONS & MODERATION
+    // ══════════════════════════════════════════════════════
+
+    @GetMapping("/questions")
+    public List<Question> getAllQuestions() { return contentDAO.getAllQuestions(); }
+
+    @PostMapping("/questions")
+    public ResponseEntity<String> addQuestion(@RequestBody Question q) {
+        contentDAO.saveQuestion(q);
+        return ResponseEntity.ok("Posted.");
+    }
+
+    @DeleteMapping("/questions/{id}")
+    public ResponseEntity<String> deleteQuestion(@PathVariable int id) {
+        contentDAO.deleteQuestion(id);
+        return ResponseEntity.ok("Deleted.");
+    }
+
+    @GetMapping("/questions/urgent")
+    public List<Question> getUrgent() { return contentDAO.getUnansweredOver24Hours(); }
+
+    // ══════════════════════════════════════════════════════
+    // RESOURCES & UPLOADS
+    // ══════════════════════════════════════════════════════
+
+    @GetMapping("/resources/{course}")
+    public List<Resource> getResources(@PathVariable String course) {
+        return contentDAO.getResourcesByCourse(course);
+    }
+
+    @PostMapping("/resources/upload")
+    public ResponseEntity<Map<String,Object>> uploadFile(
+            @RequestParam("file")     MultipartFile file,
+            @RequestParam("title")    String title,
+            @RequestParam("course")   String course,
+            @RequestParam("postedBy") String postedBy) {
+
+        Map<String,Object> result = new LinkedHashMap<>();
+        try {
+            File dir = new File(UPLOAD_DIR);
+            if (!dir.exists()) dir.mkdirs();
+
+            String originalName = file.getOriginalFilename();
+            String safeName     = System.currentTimeMillis() + "_" + originalName;
+            Files.write(Paths.get(UPLOAD_DIR + safeName), file.getBytes());
+
+            Resource r = new Resource(title, "/uploads/" + safeName, course, postedBy, detectType(originalName));
+            r.setOriginalFileName(originalName);
+            contentDAO.saveResource(r);
+
+            result.put("message", "Uploaded successfully.");
+            return ResponseEntity.ok(result);
+        } catch (IOException e) {
+            result.put("error", "Upload failed");
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // BOOKS (Open Library Proxy)
+    // ══════════════════════════════════════════════════════
+
+    @GetMapping("/books/{query}")
+    public ResponseEntity<String> searchBooks(@PathVariable String query) {
+        try {
+            String url = "https://openlibrary.org/search.json?q="
+                    + query.replace(" ", "+") + "&limit=6&fields=title,author_name,key";
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest req   = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+            return ResponseEntity.ok(resp.body());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("{\"error\":\"Offline\"}");
+        }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // VIDEO SESSIONS
+    // ══════════════════════════════════════════════════════
+
+    @GetMapping("/sessions")
+    public List<VideoSession> getSessions() {
+        return contentDAO.getAllVideoSessions();
+    }
+
+    @PostMapping("/sessions")
+    public ResponseEntity<String> scheduleSession(@RequestBody VideoSession vs) {
+        String link = vs.getMeetingLink();
+        if (link != null && !link.startsWith("http")) vs.setMeetingLink("https://" + link);
+        contentDAO.saveVideoSession(vs);
+        return ResponseEntity.ok("Scheduled.");
+    }
+
+    @DeleteMapping("/sessions/{id}")
+    public ResponseEntity<String> deleteSession(@PathVariable int id) {
+        contentDAO.deleteVideoSession(id);
+        return ResponseEntity.ok("Cancelled.");
+    }
+
+    // ══════════════════════════════════════════════════════
+    // ANALYTICS & GAMIFICATION
+    // ══════════════════════════════════════════════════════
+
+    @GetMapping("/leaderboard")
+    public List<Student> leaderboard() { return userDAO.getLeaderboard(10); }
+
+    @GetMapping("/stats/subjects")
+    public Map<String,Long> subjectStats() { return contentDAO.getSubjectStats(); }
+
+    // ══════════════════════════════════════════════════════
+    // PRIVATE HELPERS
+    // ══════════════════════════════════════════════════════
+
+    private String detectType(String name) {
+        if (name == null) return "file";
+        String f = name.toLowerCase();
+        if (f.endsWith(".pdf")) return "pdf";
+        if (f.endsWith(".ppt") || f.endsWith(".pptx")) return "slides";
+        if (f.endsWith(".png") || f.endsWith(".jpg")) return "image";
+        if (f.endsWith(".mp4")) return "video";
+        return "file";
+    }
+}

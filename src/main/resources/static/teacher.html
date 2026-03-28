@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Hive | Faculty Portal</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    /* Faculty specific color overrides */
+    :root { --primary: #2980B9; }
+    .sb-hex { background: linear-gradient(135deg, var(--primary), #1A5276); }
+    .nav-item.active { background: var(--primary); }
+    .btn-gold { background: linear-gradient(135deg, var(--primary), #1A5276); }
+  </style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+  <div class="theme-switcher" style="padding: 20px; border-top: 1px solid var(--border); margin-top: 20px;">
+    <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase;">Theme</p>
+    <div style="display: flex; gap: 10px;">
+      <button onclick="setTheme('light')" class="theme-btn" title="Light Mode" style="background:#fff; border:1px solid #ccc; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+      <button onclick="setTheme('hive')" class="theme-btn" title="Hive Classic" style="background:#D4880A; border:none; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+      <button onclick="setTheme('midnight')" class="theme-btn" title="Midnight" style="background:#1C222D; border:1px solid #38BDF8; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+    </div>
+  </div>
+  <div style="display: flex; align-items: center; margin-bottom: 40px;">
+    <div class="sb-hex"><i class="fa-solid fa-chalkboard-user"></i></div>
+    <div class="brand-title">Faculty</div>
+  </div>
+
+  <div class="nav-item active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-house"></i> Overview</div>
+  <div class="nav-item" onclick="switchTab('resources', this)"><i class="fa-solid fa-file-arrow-up"></i> Manage Resources</div>
+  <div class="nav-item" onclick="switchTab('assignments', this)"><i class="fa-solid fa-clipboard-check"></i> Assignments</div>
+  <div class="nav-item" onclick="switchTab('sessions', this)"><i class="fa-solid fa-video"></i> Video Sessions</div>
+
+  <div class="nav-item" style="margin-top: auto; color: var(--danger);" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+</div>
+
+<div class="main">
+  <div id="global-banner" style="display:none; background: #2980B9; color: white; padding: 12px 20px; text-align: center; font-weight: bold; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(41, 128, 185, 0.2);">
+    <i class="fa-solid fa-circle-info" style="margin-right: 10px;"></i> <span id="banner-text"></span>
+  </div>
+
+  <div class="header">
+    <div><h1 id="welcome-text">Faculty Dashboard</h1></div>
+    <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+  </div>
+
+  <div id="view-dashboard" class="view-section active">
+    <div class="stats-row">
+      <div class="stat-card" style="border-left: 4px solid var(--danger);"><div class="stat-title">Urgent Queries</div><div class="stat-val" style="color:var(--danger);" id="stat-urgent">0</div></div>
+    </div>
+    <div class="panel" style="margin-top: 20px;">
+      <h2 style="color: var(--danger);">Needs Attention (24h+)</h2>
+      <div id="urgent-container" style="display:grid; gap:10px;">Loading...</div>
+    </div>
+  </div>
+
+  <div id="view-resources" class="view-section">
+    <div class="content-grid">
+      <div class="panel">
+        <h2>Upload Course Material</h2>
+        <form id="uploadForm">
+          <input type="text" id="r-title" placeholder="Document Title" required>
+          <input type="text" id="r-course" placeholder="Course ID (e.g. CS101)" required>
+          <input type="file" id="r-file" required style="border:none; padding:0;">
+          <button type="button" class="btn-gold" onclick="uploadResource()">Upload File</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2>Find Books to Recommend</h2>
+        <div style="display:flex; gap:10px; margin-bottom: 20px;">
+          <input type="text" id="book-search" placeholder="Search topic or title...">
+          <button class="btn-gold" style="width: 120px;" onclick="searchBooks()">Search</button>
+        </div>
+        <div id="books-container" style="display: grid; gap: 10px;">Results appear here...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-assignments" class="view-section">
+    <div class="panel">
+      <h2>Post New Assignment</h2>
+      <input type="text" id="a-title" placeholder="Assignment Title">
+      <input type="text" id="a-course" placeholder="Course ID (e.g. CS101)">
+      <textarea id="a-desc" rows="3" placeholder="Assignment Description"></textarea>
+      <input type="datetime-local" id="a-deadline" style="color: black;">
+      <input type="text" id="a-key" placeholder="Answer Key (Revealed to students after deadline)">
+      <button class="btn-gold" onclick="postAssignment()">Deploy Assignment</button>
+    </div>
+  </div>
+
+  <div id="view-sessions" class="view-section">
+    <div class="content-grid">
+      <div class="panel">
+        <h2>Schedule Live Session</h2>
+        <input type="text" id="v-topic" placeholder="Session Topic">
+        <input type="text" id="v-subject" placeholder="Course/Subject">
+        <input type="datetime-local" id="v-time" style="color: black;">
+        <input type="url" id="v-link" placeholder="Meeting Link (Zoom/Meet/Teams)">
+        <button class="btn-gold" onclick="scheduleSession()">Schedule Meeting</button>
+      </div>
+      <div class="panel">
+        <h2>My Scheduled Sessions</h2>
+        <div id="sessions-container" style="display:grid; gap:10px;">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const user = JSON.parse(localStorage.getItem('hive_user'));
+  if (!user || user.role !== 'teacher') window.location.href = "index.html";
+  document.getElementById('welcome-text').innerText = `Professor ${user.name}`;
+
+  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('mobile-open'); }
+
+  function switchTab(tabId, element) {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+      document.getElementById('view-' + tabId).classList.add('active');
+
+      if(tabId === 'dashboard') loadDashboard();
+      if(tabId === 'sessions') fetchSessions();
+  }
+
+  // FIXED: Added Broadcast Check Function
+  async function checkBroadcast() {
+      try {
+          const res = await fetch('/api/admin/broadcast/latest');
+          const data = await res.json();
+          if(data && data.message) {
+              document.getElementById('global-banner').style.display = 'block';
+              document.getElementById('banner-text').innerText = data.message;
+          }
+      } catch(e) { console.log("No active broadcasts."); }
+  }
+
+  async function loadDashboard() {
+      try {
+          const res = await fetch('/api/hive/questions/urgent');
+          if(!res.ok) throw new Error("Network error");
+          const data = await res.json();
+          document.getElementById('stat-urgent').innerText = data.length;
+          document.getElementById('urgent-container').innerHTML = data.map(q => `
+              <div class="item-card" style="border-left: 4px solid var(--danger);">
+                  <div><strong>${q.title}</strong><br><span style="font-size:12px;">${q.subject}</span></div>
+                  <button class="btn-action delete" onclick="fetch('/api/hive/questions/${q.id}', {method:'DELETE'}).then(()=>loadDashboard())">Clear</button>
+              </div>
+          `).join('') || "No urgent questions.";
+      } catch(e) { console.error("Error loading dashboard"); }
+  }
+
+  async function uploadResource() {
+      const fileInput = document.getElementById('r-file');
+      if(!fileInput.files.length) return alert("Select a file to upload.");
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+      formData.append("title", document.getElementById('r-title').value);
+      formData.append("course", document.getElementById('r-course').value);
+      formData.append("postedBy", user.name);
+      await fetch('/api/hive/resources/upload', { method: 'POST', body: formData });
+      alert("File uploaded!");
+      document.getElementById('uploadForm').reset();
+  }
+
+  async function searchBooks() {
+      const query = document.getElementById('book-search').value;
+      if(!query) return;
+      document.getElementById('books-container').innerHTML = "Searching...";
+      try {
+          const data = await (await fetch(`/api/hive/books/${query}`)).json();
+          document.getElementById('books-container').innerHTML = data.docs.map(book => `
+              <div class="item-card" style="flex-direction:column; align-items:flex-start;">
+                  <strong>${book.title}</strong><span style="font-size:12px;">By: ${book.author_name?.[0]||'Unknown'}</span>
+                  <a href="https://openlibrary.org${book.key}" target="_blank" class="btn-action" style="margin-top:10px;">View Book</a>
+              </div>
+          `).join('') || "No books found.";
+      } catch(e) { document.getElementById('books-container').innerHTML = "Error reaching library."; }
+  }
+
+  async function postAssignment() {
+      const payload = {
+          title: document.getElementById('a-title').value,
+          course: document.getElementById('a-course').value,
+          description: document.getElementById('a-desc').value,
+          deadline: document.getElementById('a-deadline').value,
+          answerText: document.getElementById('a-key').value,
+          teacherName: user.name
+      };
+      const res = await fetch('/api/hive/assignments', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      if(res.ok) {
+          alert("Assignment Deployed!");
+          ['a-title','a-course','a-desc','a-deadline','a-key'].forEach(id => document.getElementById(id).value = '');
+      }
+  }
+
+  async function scheduleSession() {
+      const payload = {
+          topic: document.getElementById('v-topic').value,
+          subject: document.getElementById('v-subject').value,
+          scheduledTime: document.getElementById('v-time').value,
+          meetingLink: document.getElementById('v-link').value,
+          host: user.name
+      };
+      const res = await fetch('/api/hive/sessions', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      if(res.ok) {
+          alert("Session Scheduled!");
+          ['v-topic','v-subject','v-time','v-link'].forEach(id => document.getElementById(id).value = '');
+          fetchSessions();
+      }
+  }
+
+  async function fetchSessions() {
+      try {
+          const res = await fetch('/api/hive/sessions');
+          const data = await res.json();
+          document.getElementById('sessions-container').innerHTML = data.map(s => `
+              <div class="item-card">
+                  <div>
+                      <strong>${s.topic}</strong><br>
+                      <span style="font-size:12px;">${new Date(s.scheduledTime).toLocaleString()}</span>
+                  </div>
+                  <button class="btn-action delete" onclick="deleteSession(${s.id})">Cancel</button>
+              </div>
+          `).join('') || "No active sessions.";
+      } catch(e) { console.error("Error fetching sessions"); }
+  }
+
+  async function deleteSession(id) {
+      await fetch(`/api/hive/sessions/${id}`, { method: 'DELETE' });
+      fetchSessions();
+  }
+
+  function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
+
+  // Initialize
+  loadDashboard();
+  checkBroadcast(); // INITIAL CALL ADDED
+
+  function setTheme(themeName) {
+    // Remove existing theme classes
+    document.body.classList.remove('light-mode', 'midnight-mode');
+
+    // Add the selected one
+    if (themeName === 'light') document.body.classList.add('light-mode');
+    if (themeName === 'midnight') document.body.classList.add('midnight-mode');
+
+    // Save to browser memory
+    localStorage.setItem('hive_theme', themeName);
+}
+
+// Check for saved theme on page load
+function initTheme() {
+    const savedTheme = localStorage.getItem('hive_theme');
+    if (savedTheme) {
+        setTheme(savedTheme);
+    }
+}
+
+// Call initTheme at the start of your script
+initTheme();
+</script>
+</body>
+</html>
