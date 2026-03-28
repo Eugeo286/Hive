@@ -66,7 +66,7 @@
         <p>Access your academic ecosystem.</p>
     </div>
 
-    <div class="auth-tabs">
+    <div class="auth-tabs" id="main-tabs">
         <div class="auth-tab active" onclick="switchTab('login')">Sign In</div>
         <div class="auth-tab" onclick="switchTab('register')">Register</div>
     </div>
@@ -80,7 +80,7 @@
             <label>Password</label>
             <input type="password" id="l-pass" placeholder="••••••••">
         </div>
-        <button class="btn-gold" onclick="doLogin()">Secure Login <i class="fa-solid fa-arrow-right"></i></button>
+        <button class="btn-gold" style="width: 100%;" onclick="doLogin()">Secure Login <i class="fa-solid fa-arrow-right"></i></button>
         <p style="text-align:center; margin-top:15px; font-size:12px;">
             <a href="#" onclick="switchTab('forgot')" style="color: var(--gold);">Forgot Password?</a>
         </p>
@@ -88,13 +88,13 @@
     </div>
 
     <div id="panel-forgot" class="auth-panel">
-        <h3 style="text-align:center; margin-bottom:15px;">Reset Password</h3>
+        <h3 style="text-align:center; margin-bottom:15px; font-family: 'Syne';">Reset Password</h3>
         <div class="input-group">
             <label>Enter your Email</label>
             <input type="email" id="f-email" placeholder="name@university.edu">
         </div>
-        <button class="btn-gold" onclick="sendResetCode()">Send Verification Code</button>
-        <div id="reset-step-2" style="display:none; margin-top:20px;">
+        <button class="btn-gold" id="btn-send-code" style="width: 100%;" onclick="sendResetCode()">Send Verification Code</button>
+        <div id="reset-step-2" style="display:none; margin-top:20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
             <div class="input-group">
                 <label>6-Digit Code</label>
                 <input type="text" id="f-code" placeholder="123456">
@@ -103,10 +103,10 @@
                 <label>New Password</label>
                 <input type="password" id="f-new-pass" placeholder="••••••••">
             </div>
-            <button class="btn-gold" onclick="resetPassword()">Reset Password</button>
+            <button class="btn-gold" id="btn-reset-pass" style="width: 100%;" onclick="resetPassword()">Confirm New Password</button>
         </div>
-        <p style="text-align:center; margin-top:15px; font-size:12px;">
-            <a href="#" onclick="switchTab('login')" style="color: var(--gold);">Back to Login</a>
+        <p style="text-align:center; margin-top:20px; font-size:12px;">
+            <a href="#" onclick="switchTab('login')" style="color: var(--gold);"><i class="fa-solid fa-arrow-left"></i> Back to Login</a>
         </p>
     </div>
 
@@ -130,7 +130,7 @@
                 <option value="teacher">👨‍🏫 Faculty</option>
             </select>
         </div>
-        <button class="btn-gold" onclick="doRegister()">Create Account</button>
+        <button class="btn-gold" style="width: 100%;" onclick="doRegister()">Create Account</button>
     </div>
 </div>
 
@@ -154,10 +154,16 @@
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
 
-        // Only add active class to tab button if it exists (Forgot password doesn't have a top tab)
-        const tabButton = document.querySelector(`[onclick="switchTab('${tab}')"]`);
-        if (tabButton && tabButton.classList.contains('auth-tab')) {
-            tabButton.classList.add('active');
+        // Hide top tabs if on forgot password screen
+        const mainTabs = document.getElementById('main-tabs');
+        if (tab === 'forgot') {
+            mainTabs.style.display = 'none';
+        } else {
+            mainTabs.style.display = 'flex';
+            const tabButton = document.querySelector(`[onclick="switchTab('${tab}')"]`);
+            if (tabButton && tabButton.classList.contains('auth-tab')) {
+                tabButton.classList.add('active');
+            }
         }
 
         document.getElementById('panel-' + tab).classList.add('active');
@@ -178,48 +184,33 @@
             if(errorMsg) {
                 errorMsg.innerText = "Please fill in all fields.";
                 errorMsg.style.display = 'block';
-            } else {
-                alert("Please fill in all fields.");
-            }
+            } else { alert("Please fill in all fields."); }
             return;
         }
 
         try {
             const response = await fetch('/api/hive/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email, password: password })
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, password: password })
             });
 
             if (response.ok) {
                 const userData = await response.json();
-                // Store user session data in browser
                 localStorage.setItem('hive_user', JSON.stringify(userData));
 
-                // Route to correct dashboard based on backend role
-                if (userData.role === 'admin') {
-                    window.location.href = 'admin.html';
-                } else if (userData.role === 'teacher') {
-                    window.location.href = 'teacher.html';
-                } else {
-                    window.location.href = 'student.html';
-                }
+                if (userData.role === 'admin') window.location.href = 'admin.html';
+                else if (userData.role === 'teacher') window.location.href = 'teacher.html';
+                else window.location.href = 'student.html';
             } else {
                 if(errorMsg) {
                     errorMsg.innerText = "Invalid email or password.";
                     errorMsg.style.display = 'block';
-                } else {
-                    alert("Invalid email or password.");
-                }
+                } else { alert("Invalid email or password."); }
             }
         } catch (error) {
-            console.error("Login Error:", error);
             if(errorMsg) {
                 errorMsg.innerText = "Cannot connect to server. Ensure backend is running.";
                 errorMsg.style.display = 'block';
-            } else {
-                alert("Cannot connect to server.");
-            }
+            } else { alert("Cannot connect to server."); }
         }
     }
 
@@ -231,27 +222,23 @@
         const role = document.getElementById('r-role').value;
 
         if(!name || !email || !password) {
-            alert("Please fill in all fields.");
-            return;
+            alert("Please fill in all fields."); return;
         }
 
         try {
             const response = await fetch('/api/hive/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name, email: email, password: password, role: role })
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name, email: email, password: password, role: role })
             });
 
             if (response.ok) {
                 alert("Account created successfully! You can now log in.");
                 switchTab('login');
-                document.getElementById('l-email').value = email; // pre-fill email
+                document.getElementById('l-email').value = email;
             } else {
                 const errorText = await response.text();
                 alert(errorText || "Email already exists or registration failed.");
             }
         } catch (error) {
-            console.error("Registration Error:", error);
             alert("Cannot connect to server. Ensure backend is running.");
         }
     }
@@ -260,19 +247,21 @@
     async function sendResetCode() {
         const email = document.getElementById('f-email').value;
         if (!email) {
-            alert("Please enter your email first.");
-            return;
+            alert("Please enter your email first."); return;
         }
+
+        // Add Loading State
+        const btn = document.getElementById('btn-send-code');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+        btn.disabled = true;
 
         try {
             const response = await fetch('/api/auth/forgot-password', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email })
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email })
             });
 
             if (response.ok) {
-                alert("Verification code sent! Check your email.");
+                alert("Verification code sent! Please check your email inbox.");
                 document.getElementById('reset-step-2').style.display = 'block';
             } else {
                 const errorText = await response.text();
@@ -280,6 +269,10 @@
             }
         } catch (error) {
             alert("Cannot connect to server.");
+        } finally {
+            // Remove Loading State
+            btn.innerHTML = 'Send Verification Code';
+            btn.disabled = false;
         }
     }
 
@@ -289,15 +282,17 @@
         const newPassword = document.getElementById('f-new-pass').value;
 
         if (!code || !newPassword) {
-            alert("Please enter the code and a new password.");
-            return;
+            alert("Please enter the code and a new password."); return;
         }
+
+        // Add Loading State
+        const btn = document.getElementById('btn-reset-pass');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+        btn.disabled = true;
 
         try {
             const response = await fetch('/api/auth/reset-password', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email, code: code, newPassword: newPassword })
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, code: code, newPassword: newPassword })
             });
 
             if (response.ok) {
@@ -313,6 +308,10 @@
             }
         } catch (error) {
             alert("Cannot connect to server.");
+        } finally {
+             // Remove Loading State
+             btn.innerHTML = 'Confirm New Password';
+             btn.disabled = false;
         }
     }
 </script>
