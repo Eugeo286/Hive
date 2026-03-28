@@ -9,15 +9,9 @@
 </head>
 <body>
 
+<div class="hive-watermark">HIVE</div>
+
 <div class="sidebar" id="sidebar">
-  <div class="theme-switcher" style="padding: 20px; border-top: 1px solid var(--border); margin-top: 20px;">
-    <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase;">Theme</p>
-    <div style="display: flex; gap: 10px;">
-      <button onclick="setTheme('light')" class="theme-btn" title="Light Mode" style="background:#fff; border:1px solid #ccc; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
-      <button onclick="setTheme('hive')" class="theme-btn" title="Hive Classic" style="background:#D4880A; border:none; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
-      <button onclick="setTheme('midnight')" class="theme-btn" title="Midnight" style="background:#1C222D; border:1px solid #38BDF8; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
-    </div>
-  </div>
   <div style="display: flex; align-items: center; margin-bottom: 40px;">
     <div class="sb-hex"><i class="fa-solid fa-graduation-cap"></i></div>
     <div class="brand-title">The Hive</div>
@@ -25,16 +19,97 @@
   <div class="nav-item active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-house"></i> Dashboard</div>
   <div class="nav-item" onclick="switchTab('qa', this)"><i class="fa-solid fa-comments"></i> Q&A Board</div>
   <div class="nav-item" onclick="switchTab('resources', this)"><i class="fa-solid fa-book-open"></i> Resources & Library</div>
-  <div class="nav-item" onclick="switchTab('assignments', this)"><i class="fa-solid fa-clipboard-list"></i> Assignments</div>
-  <div class="nav-item" onclick="switchTab('sessions', this)"><i class="fa-solid fa-video"></i> Video Sessions</div>
-
-  <div class="nav-item" style="margin-top: auto; color: var(--danger); background: rgba(255, 76, 76, 0.1);" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+  <div class="nav-item" onclick="switchTab('quizzes', this)"><i class="fa-solid fa-stopwatch"></i> Live Quizzes</div>
+  <div class="nav-item" style="margin-top: auto; color: var(--danger);" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
 </div>
 
 <div class="main">
-  <div id="global-banner" style="display:none; background: #FF4C4C; color: white; padding: 12px 20px; text-align: center; font-weight: bold; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(255, 76, 76, 0.2);">
-    <i class="fa-solid fa-bullhorn" style="margin-right: 10px;"></i> <span id="banner-text"></span>
+  <div id="view-resources" class="view-section">
+    <div class="content-grid">
+      <div class="panel">
+        <h2>Course Materials</h2>
+        <div style="display:flex; gap:10px; margin-bottom: 20px;">
+          <input type="text" id="r-search" placeholder="Course ID (e.g. CS101)">
+          <button class="btn-gold" style="width: 120px;" onclick="fetchResources()">Find</button>
+        </div>
+        <div id="resources-container" style="display: grid; gap: 10px;">Search a course...</div>
+      </div>
+    </div>
   </div>
+
+        <div style="margin-bottom: 15px;">
+          <p style="font-weight: bold; margin-bottom: 10px;">1. What is JVM?</p>
+          <label style="display:block; margin-bottom:5px;"><input type="radio" name="q1" value="A"> Java Virtual Machine</label>
+          <label style="display:block; margin-bottom:5px;"><input type="radio" name="q1" value="B"> Java Visual Module</label>
+        </div>
+      </div>
+
+      <button class="btn-gold" onclick="submitQuiz()">Submit Answers</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ... [Keep your existing script functions]
+
+  // Modify fetchResources to force DOWNLOAD instead of open
+  async function fetchResources() {
+      const course = document.getElementById('r-search').value;
+      if(!course) return;
+      document.getElementById('resources-container').innerHTML = "Searching...";
+
+      try {
+          const res = await fetch(`/api/hive/resources/${course}`);
+          const data = await res.json();
+          document.getElementById('resources-container').innerHTML = data.map(r => `
+              <div class="item-card">
+                  <div><strong><i class="fa-solid fa-file"></i> ${r.title}</strong></div>
+                  <a href="${r.link}" download="${r.title}" class="btn-action" style="background:var(--gold); color:#fff; border:none;">
+                      <i class="fa-solid fa-download"></i> Download
+                  </a>
+              </div>
+          `).join('') || "No local files found.";
+      } catch (e) {
+          document.getElementById('resources-container').innerHTML = "Error loading resources.";
+      }
+  }
+
+  // Live Quiz Logic
+  let quizInterval;
+  let timeLeft;
+
+  function startQuiz(quizId, durationMins) {
+      document.getElementById('quiz-list-panel').style.display = 'none';
+      document.getElementById('active-quiz-panel').style.display = 'block';
+
+      timeLeft = durationMins * 60;
+      updateTimerDisplay();
+
+      quizInterval = setInterval(() => {
+          timeLeft--;
+          updateTimerDisplay();
+          if (timeLeft <= 0) {
+              clearInterval(quizInterval);
+              alert("Time is up! Auto-submitting quiz.");
+              submitQuiz();
+          }
+      }, 1000);
+  }
+
+  function updateTimerDisplay() {
+      let m = Math.floor(timeLeft / 60);
+      let s = timeLeft % 60;
+      document.getElementById('quiz-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+  function submitQuiz() {
+      clearInterval(quizInterval);
+      alert("Quiz submitted! The system has auto-graded your answers. You scored 100%.");
+      document.getElementById('active-quiz-panel').style.display = 'none';
+      document.getElementById('quiz-list-panel').style.display = 'block';
+      // Backend integration: Post answers to /api/quizzes/submit
+  }
+</script>
 
   <div class="header">
     <div><h1 id="welcome-text">Welcome back</h1><p>Ready to earn some skill points today?</p></div>
@@ -63,15 +138,6 @@
     </div>
   </div>
 
-  <div id="view-resources" class="view-section">
-    <div class="content-grid">
-      <div class="panel">
-        <h2>Course Materials</h2>
-        <div style="display:flex; gap:10px; margin-bottom: 20px;">
-          <input type="text" id="r-search" placeholder="Course ID (e.g. CS101)">
-          <button class="btn-gold" style="width: 120px;" onclick="fetchResources()">Find</button>
-        </div>
-        <div id="resources-container" style="display: grid; gap: 10px;">Search a course...</div>
       </div>
       <div class="panel">
         <h2>Global Library Search</h2>
@@ -96,6 +162,22 @@
     </div>
   </div>
 
+<div id="view-quizzes" class="view-section">
+  <div class="panel" id="quiz-list-panel">
+    <h2>Available Quizzes</h2>
+    <div id="quizzes-container" style="display: grid; gap: 10px;">Loading quizzes...</div>
+  </div>
+
+  <div class="panel" id="active-quiz-panel" style="display: none; border-color: var(--gold);">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 15px;">
+      <h2 style="margin:0; border:none; padding:0;">Live Quiz</h2>
+      <div style="font-size: 24px; font-family: 'Syne'; color: var(--danger); font-weight: bold;" id="quiz-timer">00:00</div>
+    </div>
+    <div id="quiz-questions-area" style="margin-bottom: 20px;"></div>
+    <button class="btn-gold" onclick="submitQuiz()">Submit Answers</button>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -116,6 +198,8 @@
       if(tabId === 'qa') fetchQuestions();
       if(tabId === 'assignments') fetchAssignments();
       if(tabId === 'sessions') fetchSessions();
+      if(tabId === 'quizzes') fetchQuizzes();
+  }
   }
 
   // FIXED: Added Broadcast Check Function
@@ -232,6 +316,86 @@
               </div>
           `).join('') || "No upcoming sessions at the moment.";
       } catch(e) { document.getElementById('sessions-container').innerHTML = "Error loading sessions."; }
+  }
+
+  // --- LIVE QUIZ LOGIC ---
+  let currentQuizQuestions = [];
+  let currentQuizId = null;
+  let quizInterval;
+  let timeLeft;
+
+  async function fetchQuizzes() {
+      try {
+          const res = await fetch('/api/quizzes/all');
+          const data = await res.json();
+          document.getElementById('quizzes-container').innerHTML = data.map(q => `
+              <div class="item-card">
+                  <div><strong>${q.title}</strong><br><span style="font-size:12px;">${q.subject} | ${q.durationMinutes} Minutes</span></div>
+                  <button class="btn-action" onclick="startQuiz(${q.id}, ${q.durationMinutes}, '${q.title}')">Start Quiz</button>
+              </div>
+          `).join('') || "No active quizzes.";
+      } catch (e) {
+          document.getElementById('quizzes-container').innerHTML = "Error loading quizzes.";
+      }
+  }
+
+  async function startQuiz(quizId, durationMins, title) {
+      currentQuizId = quizId;
+      const res = await fetch(`/api/quizzes/${quizId}/questions`);
+      currentQuizQuestions = await res.json();
+
+      document.getElementById('quiz-list-panel').style.display = 'none';
+      const activePanel = document.getElementById('active-quiz-panel');
+      activePanel.style.display = 'block';
+      activePanel.querySelector('h2').innerText = title;
+
+      document.getElementById('quiz-questions-area').innerHTML = currentQuizQuestions.map((q, index) => `
+          <div style="margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px;">
+              <p style="font-weight: bold; margin-bottom: 10px;">${index + 1}. ${q.questionText}</p>
+              <label style="display:block; margin-bottom:5px;"><input type="radio" name="q${q.id}" value="A"> A) ${q.optA}</label>
+              <label style="display:block; margin-bottom:5px;"><input type="radio" name="q${q.id}" value="B"> B) ${q.optB}</label>
+              <label style="display:block; margin-bottom:5px;"><input type="radio" name="q${q.id}" value="C"> C) ${q.optC}</label>
+              <label style="display:block; margin-bottom:5px;"><input type="radio" name="q${q.id}" value="D"> D) ${q.optD}</label>
+          </div>
+      `).join('');
+
+      timeLeft = durationMins * 60;
+      updateTimerDisplay();
+      quizInterval = setInterval(() => {
+          timeLeft--;
+          updateTimerDisplay();
+          if (timeLeft <= 0) {
+              clearInterval(quizInterval);
+              alert("Time is up! Auto-submitting quiz.");
+              submitQuiz();
+          }
+      }, 1000);
+  }
+
+  function updateTimerDisplay() {
+      let m = Math.floor(timeLeft / 60);
+      let s = timeLeft % 60;
+      document.getElementById('quiz-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+  async function submitQuiz() {
+      clearInterval(quizInterval);
+      let score = 0;
+      currentQuizQuestions.forEach(q => {
+          const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+          if (selected && selected.value === q.correctOpt) score++;
+      });
+
+      await fetch('/api/quizzes/submit-attempt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quizId: currentQuizId, studentName: user.name, score: score, total: currentQuizQuestions.length })
+      });
+
+      alert(`Quiz Submitted! You scored ${score} out of ${currentQuizQuestions.length}.`);
+      document.getElementById('active-quiz-panel').style.display = 'none';
+      document.getElementById('quiz-list-panel').style.display = 'block';
+      fetchQuizzes();
   }
 
   function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }

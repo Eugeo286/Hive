@@ -56,6 +56,7 @@
 </head>
 <body>
 
+<div class="hive-watermark">HIVE</div>
 <div id="particles"></div>
 
 <div class="auth-card">
@@ -79,8 +80,34 @@
             <label>Password</label>
             <input type="password" id="l-pass" placeholder="••••••••">
         </div>
-        <button class="btn-gold" onclick="doLogin()">Secure Login <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i></button>
-        <div id="login-error" class="error-msg">Invalid credentials. Please try again.</div>
+        <button class="btn-gold" onclick="doLogin()">Secure Login <i class="fa-solid fa-arrow-right"></i></button>
+        <p style="text-align:center; margin-top:15px; font-size:12px;">
+            <a href="#" onclick="switchTab('forgot')" style="color: var(--gold);">Forgot Password?</a>
+        </p>
+        <div id="login-error" class="error-msg">Invalid credentials.</div>
+    </div>
+
+    <div id="panel-forgot" class="auth-panel">
+        <h3 style="text-align:center; margin-bottom:15px;">Reset Password</h3>
+        <div class="input-group">
+            <label>Enter your Email</label>
+            <input type="email" id="f-email" placeholder="name@university.edu">
+        </div>
+        <button class="btn-gold" onclick="sendResetCode()">Send Verification Code</button>
+        <div id="reset-step-2" style="display:none; margin-top:20px;">
+            <div class="input-group">
+                <label>6-Digit Code</label>
+                <input type="text" id="f-code" placeholder="123456">
+            </div>
+            <div class="input-group">
+                <label>New Password</label>
+                <input type="password" id="f-new-pass" placeholder="••••••••">
+            </div>
+            <button class="btn-gold" onclick="resetPassword()">Reset Password</button>
+        </div>
+        <p style="text-align:center; margin-top:15px; font-size:12px;">
+            <a href="#" onclick="switchTab('login')" style="color: var(--gold);">Back to Login</a>
+        </p>
     </div>
 
     <div id="panel-register" class="auth-panel">
@@ -103,119 +130,97 @@
                 <option value="teacher">👨‍🏫 Faculty</option>
             </select>
         </div>
-        <button class="btn-gold" onclick="doRegister()">Create Account <i class="fa-solid fa-user-plus" style="margin-left: 5px;"></i></button>
-        <div id="register-error" class="error-msg">Registration failed. Email may be in use.</div>
+        <button class="btn-gold" onclick="doRegister()">Create Account</button>
     </div>
 </div>
 
 <script>
-    // Background particles generation
-    const pContainer = document.getElementById('particles');
-    for(let i=0; i<20; i++) {
-        let p = document.createElement('div');
-        p.className = 'particle';
-        p.style.left = Math.random() * 100 + 'vw';
-        p.style.width = p.style.height = (Math.random() * 10 + 5) + 'px';
-        p.style.animationDuration = (Math.random() * 10 + 10) + 's';
-        p.style.animationDelay = (Math.random() * 5) + 's';
-        pContainer.appendChild(p);
-    }
-
+    // Include your existing background particles script and switchTab script here...
     function switchTab(tab) {
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
-
-        event.target.classList.add('active');
+        if(document.querySelector(`[onclick="switchTab('${tab}')"]`)) {
+            document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+        }
         document.getElementById('panel-' + tab).classList.add('active');
-
-        // Hide errors on tab switch
-        document.getElementById('login-error').style.display = 'none';
-        document.getElementById('register-error').style.display = 'none';
     }
 
-    // --- ACTUAL BACKEND API INTEGRATION ---
-
-    async function doLogin() {
-        const email = document.getElementById('l-email').value;
-        const password = document.getElementById('l-pass').value;
-        const errorMsg = document.getElementById('login-error');
-        errorMsg.style.display = 'none';
-
-        if(!email || !password) {
-            errorMsg.innerText = "Please fill in all fields.";
-            errorMsg.style.display = 'block';
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/hive/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email, password: password })
-            });
-
-            if (response.ok) {
-                const userData = await response.json();
-                // Store user session data in browser
-                localStorage.setItem('hive_user', JSON.stringify(userData));
-
-                // Route to correct dashboard based on backend role
-                if (userData.role === 'admin') {
-                    window.location.href = 'admin.html';
-                } else if (userData.role === 'teacher') {
-                    window.location.href = 'teacher.html';
-                } else {
-                    window.location.href = 'student.html';
-                }
-            } else {
-                errorMsg.innerText = "Invalid email or password.";
-                errorMsg.style.display = 'block';
-            }
-        } catch (error) {
-            console.error("Login Error:", error);
-            errorMsg.innerText = "Cannot connect to server. Ensure backend is running.";
-            errorMsg.style.display = 'block';
-        }
+    // New Password Reset Logic (Connects to backend)
+    async function sendResetCode() {
+        const email = document.getElementById('f-email').value;
+        alert("If this email exists, a reset code has been sent. (Check backend logs for code)");
+        document.getElementById('reset-step-2').style.display = 'block';
+        // Backend Integration: fetch('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({email}) })
     }
 
-    async function doRegister() {
-        const name = document.getElementById('r-name').value;
-        const email = document.getElementById('r-email').value;
-        const password = document.getElementById('r-pass').value;
-        const role = document.getElementById('r-role').value;
-        const errorMsg = document.getElementById('register-error');
-        errorMsg.style.display = 'none';
-
-        if(!name || !email || !password) {
-            errorMsg.innerText = "Please fill in all fields.";
-            errorMsg.style.display = 'block';
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/hive/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name, email: email, password: password, role: role })
-            });
-
-            if (response.ok) {
-                alert("Account created successfully! You can now log in.");
-                switchTab('login');
-                document.querySelectorAll('.auth-tab')[0].classList.add('active');
-                document.querySelectorAll('.auth-tab')[1].classList.remove('active');
-                document.getElementById('l-email').value = email; // pre-fill email
-            } else {
-                const errorText = await response.text();
-                errorMsg.innerText = errorText || "Email already exists or registration failed.";
-                errorMsg.style.display = 'block';
-            }
-        } catch (error) {
-            console.error("Registration Error:", error);
-            errorMsg.innerText = "Cannot connect to server. Ensure backend is running.";
-            errorMsg.style.display = 'block';
-        }
+    async function resetPassword() {
+        alert("Password updated successfully! Please log in.");
+        switchTab('login');
+        // Backend Integration: fetch('/api/auth/reset-password', { method: 'POST', body: JSON.stringify({email, code, newPassword}) })
     }
+
+    // ... [Keep your existing doLogin and doRegister functions here]
+
+    // REAL Password Reset Logic
+async function sendResetCode() {
+    const email = document.getElementById('f-email').value;
+    if (!email) {
+        alert("Please enter your email first.");
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
+
+        if (response.ok) {
+            alert("Verification code sent! Check your email.");
+            document.getElementById('reset-step-2').style.display = 'block';
+        } else {
+            const errorText = await response.text();
+            alert("Error: " + errorText);
+        }
+    } catch (error) {
+        alert("Cannot connect to server.");
+    }
+}
+
+async function resetPassword() {
+    const email = document.getElementById('f-email').value;
+    const code = document.getElementById('f-code').value;
+    const newPassword = document.getElementById('f-new-pass').value;
+
+    if (!code || !newPassword) {
+        alert("Please enter the code and a new password.");
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/auth/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, code: code, newPassword: newPassword })
+        });
+
+        if (response.ok) {
+            alert("Password updated successfully! Please log in.");
+            switchTab('login');
+            // Pre-fill the login email for convenience
+            document.getElementById('l-email').value = email;
+            document.getElementById('f-code').value = '';
+            document.getElementById('f-new-pass').value = '';
+            document.getElementById('reset-step-2').style.display = 'none';
+        } else {
+            const errorText = await response.text();
+            alert("Error: " + errorText);
+        }
+    } catch (error) {
+        alert("Cannot connect to server.");
+    }
+}
 </script>
 </body>
 </html>

@@ -34,6 +34,7 @@
   <div class="nav-item" onclick="switchTab('resources', this)"><i class="fa-solid fa-file-arrow-up"></i> Manage Resources</div>
   <div class="nav-item" onclick="switchTab('assignments', this)"><i class="fa-solid fa-clipboard-check"></i> Assignments</div>
   <div class="nav-item" onclick="switchTab('sessions', this)"><i class="fa-solid fa-video"></i> Video Sessions</div>
+  <div class="nav-item" onclick="switchTab('quizzes', this)"><i class="fa-solid fa-stopwatch"></i> Create Quiz</div>
 
   <div class="nav-item" style="margin-top: auto; color: var(--danger);" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
 </div>
@@ -47,6 +48,33 @@
     <div><h1 id="welcome-text">Faculty Dashboard</h1></div>
     <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
   </div>
+
+  <div class="hive-watermark">HIVE</div>
+
+  <div class="nav-item" onclick="switchTab('quizzes', this)"><i class="fa-solid fa-stopwatch"></i> Create Quiz</div>
+        <h3 style="font-size:16px; margin-bottom:10px;">Questions</h3>
+        <div class="item-card" style="flex-direction: column; align-items: stretch;">
+          <input type="text" placeholder="Question Text" style="background:rgba(0,0,0,0.4);">
+          <div style="display:flex; gap:10px;">
+            <input type="text" placeholder="Option A">
+            <input type="text" placeholder="Option B">
+          </div>
+          <div style="display:flex; gap:10px;">
+            <input type="text" placeholder="Option C">
+            <input type="text" placeholder="Option D">
+          </div>
+          <select style="width:200px;"><option value="A">Correct Answer: A</option><option value="B">Correct Answer: B</option></select>
+        </div>
+      </div>
+
+      <div style="display:flex; gap: 10px;">
+        <button class="btn-action" style="width:100%; text-align:center;">+ Add Question</button>
+        <button class="btn-gold" onclick="alert('Quiz Deployed to Students!')">Deploy Quiz</button>
+      </div>
+    </div>
+  </div>
+
+
 
   <div id="view-dashboard" class="view-section active">
     <div class="stats-row">
@@ -107,6 +135,43 @@
         <h2>My Scheduled Sessions</h2>
         <div id="sessions-container" style="display:grid; gap:10px;">Loading...</div>
       </div>
+
+      <div id="view-quizzes" class="view-section">
+        <div class="panel">
+          <h2>Quiz Architect</h2>
+          <input type="text" id="qz-title" placeholder="Quiz Title (e.g. Midterm Exams)">
+          <div style="display:flex; gap:10px;">
+            <input type="text" id="qz-subject" placeholder="Subject (e.g. CS101)">
+            <input type="number" id="qz-duration" placeholder="Duration (Minutes)" style="width:150px;">
+          </div>
+
+          <div id="qz-questions-list" style="margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+            <h3 style="font-size:16px; margin-bottom:10px;">Question 1</h3>
+            <div class="item-card quiz-question-card" style="flex-direction: column; align-items: stretch;">
+              <input type="text" class="q-text" placeholder="Question Text" style="background:rgba(0,0,0,0.4);">
+              <div style="display:flex; gap:10px;">
+                <input type="text" class="q-optA" placeholder="Option A">
+                <input type="text" class="q-optB" placeholder="Option B">
+              </div>
+              <div style="display:flex; gap:10px;">
+                <input type="text" class="q-optC" placeholder="Option C">
+                <input type="text" class="q-optD" placeholder="Option D">
+              </div>
+              <select class="q-correct" style="width:200px;">
+                <option value="A">Correct Answer: A</option>
+                <option value="B">Correct Answer: B</option>
+                <option value="C">Correct Answer: C</option>
+                <option value="D">Correct Answer: D</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex; gap: 10px;">
+            <button class="btn-gold" onclick="deployQuiz()">Deploy Quiz</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -242,6 +307,48 @@
   }
 
   function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
+
+  async function deployQuiz() {
+      const qCard = document.querySelector('.quiz-question-card');
+      const payload = {
+          title: document.getElementById('qz-title').value,
+          subject: document.getElementById('qz-subject').value,
+          durationMinutes: parseInt(document.getElementById('qz-duration').value),
+          teacherName: user.name,
+          questions: [{
+              questionText: qCard.querySelector('.q-text').value,
+              optA: qCard.querySelector('.q-optA').value,
+              optB: qCard.querySelector('.q-optB').value,
+              optC: qCard.querySelector('.q-optC').value,
+              optD: qCard.querySelector('.q-optD').value,
+              correctOpt: qCard.querySelector('.q-correct').value
+          }]
+      };
+
+      if(!payload.title || !payload.subject || !payload.durationMinutes || !payload.questions[0].questionText) {
+          alert("Please fill in all quiz details and at least one question.");
+          return;
+      }
+
+      try {
+          const res = await fetch('/api/quizzes/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+          });
+
+          if(res.ok) {
+              alert("Quiz Deployed Successfully to all Students!");
+              document.getElementById('qz-title').value = '';
+              qCard.querySelectorAll('input').forEach(i => i.value = '');
+          } else {
+              alert("Server error deploying quiz.");
+          }
+      } catch (e) {
+          alert("Cannot connect to server.");
+      }
+  }
+
 
   // Initialize
   loadDashboard();
