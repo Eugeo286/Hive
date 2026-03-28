@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="shared.css">
   <style>
-    /* Faculty specific color overrides */
     :root { --primary: #2980B9; }
     .sb-hex { background: linear-gradient(135deg, var(--primary), #1A5276); }
     .nav-item.active { background: var(--primary); }
@@ -16,13 +15,15 @@
 </head>
 <body>
 
+<div class="hive-watermark">HIVE</div>
+
 <div class="sidebar" id="sidebar">
   <div class="theme-switcher" style="padding: 20px; border-top: 1px solid var(--border); margin-top: 20px;">
     <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase;">Theme</p>
     <div style="display: flex; gap: 10px;">
-      <button onclick="setTheme('light')" class="theme-btn" title="Light Mode" style="background:#fff; border:1px solid #ccc; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
-      <button onclick="setTheme('hive')" class="theme-btn" title="Hive Classic" style="background:#D4880A; border:none; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
-      <button onclick="setTheme('midnight')" class="theme-btn" title="Midnight" style="background:#1C222D; border:1px solid #38BDF8; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+      <button onclick="setTheme('light')" class="theme-btn" style="background:#fff; border:1px solid #ccc; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+      <button onclick="setTheme('hive')" class="theme-btn" style="background:#D4880A; border:none; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+      <button onclick="setTheme('midnight')" class="theme-btn" style="background:#1C222D; border:1px solid #38BDF8; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
     </div>
   </div>
   <div style="display: flex; align-items: center; margin-bottom: 40px;">
@@ -40,7 +41,7 @@
 </div>
 
 <div class="main">
-  <div id="global-banner" style="display:none; background: #2980B9; color: white; padding: 12px 20px; text-align: center; font-weight: bold; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(41, 128, 185, 0.2);">
+  <div id="global-banner" style="display:none; background: #2980B9; color: white; padding: 12px 20px; text-align: center; font-weight: bold; border-radius: 10px; margin-bottom: 25px;">
     <i class="fa-solid fa-circle-info" style="margin-right: 10px;"></i> <span id="banner-text"></span>
   </div>
 
@@ -48,33 +49,6 @@
     <div><h1 id="welcome-text">Faculty Dashboard</h1></div>
     <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
   </div>
-
-  <div class="hive-watermark">HIVE</div>
-
-  <div class="nav-item" onclick="switchTab('quizzes', this)"><i class="fa-solid fa-stopwatch"></i> Create Quiz</div>
-        <h3 style="font-size:16px; margin-bottom:10px;">Questions</h3>
-        <div class="item-card" style="flex-direction: column; align-items: stretch;">
-          <input type="text" placeholder="Question Text" style="background:rgba(0,0,0,0.4);">
-          <div style="display:flex; gap:10px;">
-            <input type="text" placeholder="Option A">
-            <input type="text" placeholder="Option B">
-          </div>
-          <div style="display:flex; gap:10px;">
-            <input type="text" placeholder="Option C">
-            <input type="text" placeholder="Option D">
-          </div>
-          <select style="width:200px;"><option value="A">Correct Answer: A</option><option value="B">Correct Answer: B</option></select>
-        </div>
-      </div>
-
-      <div style="display:flex; gap: 10px;">
-        <button class="btn-action" style="width:100%; text-align:center;">+ Add Question</button>
-        <button class="btn-gold" onclick="alert('Quiz Deployed to Students!')">Deploy Quiz</button>
-      </div>
-    </div>
-  </div>
-
-
 
   <div id="view-dashboard" class="view-section active">
     <div class="stats-row">
@@ -97,12 +71,11 @@
           <button type="button" class="btn-gold" onclick="uploadResource()">Upload File</button>
         </form>
       </div>
-
       <div class="panel">
         <h2>Find Books to Recommend</h2>
         <div style="display:flex; gap:10px; margin-bottom: 20px;">
           <input type="text" id="book-search" placeholder="Search topic or title...">
-          <button class="btn-gold" style="width: 120px;" onclick="searchBooks()">Search</button>
+          <button class="btn-gold" onclick="searchBooks()">Search</button>
         </div>
         <div id="books-container" style="display: grid; gap: 10px;">Results appear here...</div>
       </div>
@@ -113,10 +86,10 @@
     <div class="panel">
       <h2>Post New Assignment</h2>
       <input type="text" id="a-title" placeholder="Assignment Title">
-      <input type="text" id="a-course" placeholder="Course ID (e.g. CS101)">
+      <input type="text" id="a-course" placeholder="Course ID">
       <textarea id="a-desc" rows="3" placeholder="Assignment Description"></textarea>
       <input type="datetime-local" id="a-deadline" style="color: black;">
-      <input type="text" id="a-key" placeholder="Answer Key (Revealed to students after deadline)">
+      <input type="text" id="a-key" placeholder="Answer Key">
       <button class="btn-gold" onclick="postAssignment()">Deploy Assignment</button>
     </div>
   </div>
@@ -128,50 +101,48 @@
         <input type="text" id="v-topic" placeholder="Session Topic">
         <input type="text" id="v-subject" placeholder="Course/Subject">
         <input type="datetime-local" id="v-time" style="color: black;">
-        <input type="url" id="v-link" placeholder="Meeting Link (Zoom/Meet/Teams)">
-        <button class="btn-gold" onclick="scheduleSession()">Schedule Meeting</button>
+        <input type="url" id="v-link" placeholder="Meeting Link">
+        <button class="btn-gold" onclick="scheduleSession()">Schedule</button>
       </div>
       <div class="panel">
         <h2>My Scheduled Sessions</h2>
         <div id="sessions-container" style="display:grid; gap:10px;">Loading...</div>
       </div>
+    </div>
+  </div>
 
-      <div id="view-quizzes" class="view-section">
-        <div class="panel">
-          <h2>Quiz Architect</h2>
-          <input type="text" id="qz-title" placeholder="Quiz Title (e.g. Midterm Exams)">
-          <div style="display:flex; gap:10px;">
-            <input type="text" id="qz-subject" placeholder="Subject (e.g. CS101)">
-            <input type="number" id="qz-duration" placeholder="Duration (Minutes)" style="width:150px;">
-          </div>
+  <div id="view-quizzes" class="view-section">
+    <div class="panel">
+      <h2>Quiz Architect</h2>
+      <div style="display:flex; gap:10px; align-items: flex-start; margin-bottom: 15px;">
+        <input type="text" id="qz-title" placeholder="Quiz Title (e.g. Midterm Exams)">
+        <input type="text" id="qz-subject" placeholder="Course ID" style="max-width: 150px;">
+        <input type="number" id="qz-duration" placeholder="Duration (Mins)" style="max-width: 150px;">
+      </div>
 
-          <div id="qz-questions-list" style="margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px;">
-            <h3 style="font-size:16px; margin-bottom:10px;">Question 1</h3>
-            <div class="item-card quiz-question-card" style="flex-direction: column; align-items: stretch;">
-              <input type="text" class="q-text" placeholder="Question Text" style="background:rgba(0,0,0,0.4);">
-              <div style="display:flex; gap:10px;">
-                <input type="text" class="q-optA" placeholder="Option A">
-                <input type="text" class="q-optB" placeholder="Option B">
-              </div>
-              <div style="display:flex; gap:10px;">
-                <input type="text" class="q-optC" placeholder="Option C">
-                <input type="text" class="q-optD" placeholder="Option D">
-              </div>
-              <select class="q-correct" style="width:200px;">
-                <option value="A">Correct Answer: A</option>
-                <option value="B">Correct Answer: B</option>
-                <option value="C">Correct Answer: C</option>
-                <option value="D">Correct Answer: D</option>
-              </select>
-            </div>
+      <div id="qz-questions-list" style="margin: 20px 0;">
+        <div class="item-card quiz-question-card" style="flex-direction: column; align-items: stretch; background: rgba(0,0,0,0.2);">
+          <h3 style="font-size:14px; margin-bottom:10px; color: var(--text-2);">Question 1</h3>
+          <input type="text" class="q-text" placeholder="Question Text" style="background:rgba(0,0,0,0.4);">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <input type="text" class="q-optA" placeholder="Option A">
+            <input type="text" class="q-optB" placeholder="Option B">
+            <input type="text" class="q-optC" placeholder="Option C">
+            <input type="text" class="q-optD" placeholder="Option D">
           </div>
-
-          <div style="display:flex; gap: 10px;">
-            <button class="btn-gold" onclick="deployQuiz()">Deploy Quiz</button>
-          </div>
+          <select class="q-correct" style="width:200px;">
+            <option value="A">Correct Answer: A</option>
+            <option value="B">Correct Answer: B</option>
+            <option value="C">Correct Answer: C</option>
+            <option value="D">Correct Answer: D</option>
+          </select>
         </div>
       </div>
 
+      <div style="display:flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 20px;">
+        <button class="btn-action" onclick="addQuestionBlock()">+ Add Another Question</button>
+        <button class="btn-gold" onclick="deployQuiz()"><i class="fa-solid fa-paper-plane"></i> Deploy Quiz to Students</button>
+      </div>
     </div>
   </div>
 
@@ -186,7 +157,7 @@
 
   function switchTab(tabId, element) {
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      element.classList.add('active');
+      if(element) element.classList.add('active');
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
       document.getElementById('view-' + tabId).classList.add('active');
 
@@ -194,23 +165,16 @@
       if(tabId === 'sessions') fetchSessions();
   }
 
-  // FIXED: Added Broadcast Check Function
+  // --- EXISTING LOGIC ---
   async function checkBroadcast() {
-      try {
-          const res = await fetch('/api/admin/broadcast/latest');
-          const data = await res.json();
-          if(data && data.message) {
-              document.getElementById('global-banner').style.display = 'block';
-              document.getElementById('banner-text').innerText = data.message;
-          }
-      } catch(e) { console.log("No active broadcasts."); }
+      try { const res = await fetch('/api/admin/broadcast/latest'); const data = await res.json();
+          if(data && data.message) { document.getElementById('global-banner').style.display = 'block'; document.getElementById('banner-text').innerText = data.message; }
+      } catch(e) { }
   }
 
   async function loadDashboard() {
       try {
-          const res = await fetch('/api/hive/questions/urgent');
-          if(!res.ok) throw new Error("Network error");
-          const data = await res.json();
+          const res = await fetch('/api/hive/questions/urgent'); const data = await res.json();
           document.getElementById('stat-urgent').innerText = data.length;
           document.getElementById('urgent-container').innerHTML = data.map(q => `
               <div class="item-card" style="border-left: 4px solid var(--danger);">
@@ -218,164 +182,129 @@
                   <button class="btn-action delete" onclick="fetch('/api/hive/questions/${q.id}', {method:'DELETE'}).then(()=>loadDashboard())">Clear</button>
               </div>
           `).join('') || "No urgent questions.";
-      } catch(e) { console.error("Error loading dashboard"); }
+      } catch(e) {}
   }
 
   async function uploadResource() {
-      const fileInput = document.getElementById('r-file');
-      if(!fileInput.files.length) return alert("Select a file to upload.");
-      const formData = new FormData();
-      formData.append("file", fileInput.files[0]);
-      formData.append("title", document.getElementById('r-title').value);
-      formData.append("course", document.getElementById('r-course').value);
-      formData.append("postedBy", user.name);
-      await fetch('/api/hive/resources/upload', { method: 'POST', body: formData });
-      alert("File uploaded!");
-      document.getElementById('uploadForm').reset();
+      const fileInput = document.getElementById('r-file'); if(!fileInput.files.length) return alert("Select a file.");
+      const formData = new FormData(); formData.append("file", fileInput.files[0]); formData.append("title", document.getElementById('r-title').value); formData.append("course", document.getElementById('r-course').value); formData.append("postedBy", user.name);
+      await fetch('/api/hive/resources/upload', { method: 'POST', body: formData }); alert("File uploaded!"); document.getElementById('uploadForm').reset();
   }
 
   async function searchBooks() {
-      const query = document.getElementById('book-search').value;
-      if(!query) return;
+      const query = document.getElementById('book-search').value; if(!query) return;
       document.getElementById('books-container').innerHTML = "Searching...";
       try {
           const data = await (await fetch(`/api/hive/books/${query}`)).json();
           document.getElementById('books-container').innerHTML = data.docs.map(book => `
               <div class="item-card" style="flex-direction:column; align-items:flex-start;">
-                  <strong>${book.title}</strong><span style="font-size:12px;">By: ${book.author_name?.[0]||'Unknown'}</span>
-                  <a href="https://openlibrary.org${book.key}" target="_blank" class="btn-action" style="margin-top:10px;">View Book</a>
+                  <strong>${book.title}</strong><a href="https://openlibrary.org${book.key}" target="_blank" class="btn-action" style="margin-top:10px;">View Book</a>
               </div>
           `).join('') || "No books found.";
-      } catch(e) { document.getElementById('books-container').innerHTML = "Error reaching library."; }
+      } catch(e) { document.getElementById('books-container').innerHTML = "Error."; }
   }
 
   async function postAssignment() {
-      const payload = {
-          title: document.getElementById('a-title').value,
-          course: document.getElementById('a-course').value,
-          description: document.getElementById('a-desc').value,
-          deadline: document.getElementById('a-deadline').value,
-          answerText: document.getElementById('a-key').value,
-          teacherName: user.name
-      };
-      const res = await fetch('/api/hive/assignments', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-      });
-      if(res.ok) {
-          alert("Assignment Deployed!");
-          ['a-title','a-course','a-desc','a-deadline','a-key'].forEach(id => document.getElementById(id).value = '');
-      }
+      const payload = { title: document.getElementById('a-title').value, course: document.getElementById('a-course').value, description: document.getElementById('a-desc').value, deadline: document.getElementById('a-deadline').value, answerText: document.getElementById('a-key').value, teacherName: user.name };
+      const res = await fetch('/api/hive/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if(res.ok) { alert("Deployed!"); ['a-title','a-course','a-desc','a-deadline','a-key'].forEach(id => document.getElementById(id).value = ''); }
   }
 
   async function scheduleSession() {
-      const payload = {
-          topic: document.getElementById('v-topic').value,
-          subject: document.getElementById('v-subject').value,
-          scheduledTime: document.getElementById('v-time').value,
-          meetingLink: document.getElementById('v-link').value,
-          host: user.name
-      };
-      const res = await fetch('/api/hive/sessions', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-      });
-      if(res.ok) {
-          alert("Session Scheduled!");
-          ['v-topic','v-subject','v-time','v-link'].forEach(id => document.getElementById(id).value = '');
-          fetchSessions();
-      }
+      const payload = { topic: document.getElementById('v-topic').value, subject: document.getElementById('v-subject').value, scheduledTime: document.getElementById('v-time').value, meetingLink: document.getElementById('v-link').value, host: user.name };
+      const res = await fetch('/api/hive/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if(res.ok) { alert("Scheduled!"); ['v-topic','v-subject','v-time','v-link'].forEach(id => document.getElementById(id).value = ''); fetchSessions(); }
   }
 
   async function fetchSessions() {
       try {
-          const res = await fetch('/api/hive/sessions');
-          const data = await res.json();
-          document.getElementById('sessions-container').innerHTML = data.map(s => `
-              <div class="item-card">
-                  <div>
-                      <strong>${s.topic}</strong><br>
-                      <span style="font-size:12px;">${new Date(s.scheduledTime).toLocaleString()}</span>
-                  </div>
-                  <button class="btn-action delete" onclick="deleteSession(${s.id})">Cancel</button>
-              </div>
-          `).join('') || "No active sessions.";
-      } catch(e) { console.error("Error fetching sessions"); }
+          const data = await (await fetch('/api/hive/sessions')).json();
+          document.getElementById('sessions-container').innerHTML = data.map(s => `<div class="item-card"><div><strong>${s.topic}</strong></div><button class="btn-action delete" onclick="deleteSession(${s.id})">Cancel</button></div>`).join('') || "No active sessions.";
+      } catch(e) {}
   }
+  async function deleteSession(id) { await fetch(`/api/hive/sessions/${id}`, { method: 'DELETE' }); fetchSessions(); }
 
-  async function deleteSession(id) {
-      await fetch(`/api/hive/sessions/${id}`, { method: 'DELETE' });
-      fetchSessions();
+  // --- NEW: QUIZ BUILDER LOGIC ---
+  let questionCount = 1;
+
+  function addQuestionBlock() {
+      questionCount++;
+      const container = document.getElementById('qz-questions-list');
+      const div = document.createElement('div');
+      div.className = "item-card quiz-question-card";
+      div.style.cssText = "flex-direction: column; align-items: stretch; background: rgba(0,0,0,0.2);";
+      div.innerHTML = `
+          <h3 style="font-size:14px; margin-bottom:10px; color: var(--text-2);">Question ${questionCount}</h3>
+          <input type="text" class="q-text" placeholder="Question Text" style="background:rgba(0,0,0,0.4);">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+              <input type="text" class="q-optA" placeholder="Option A">
+              <input type="text" class="q-optB" placeholder="Option B">
+              <input type="text" class="q-optC" placeholder="Option C">
+              <input type="text" class="q-optD" placeholder="Option D">
+          </div>
+          <select class="q-correct" style="width:200px;">
+              <option value="A">Correct Answer: A</option>
+              <option value="B">Correct Answer: B</option>
+              <option value="C">Correct Answer: C</option>
+              <option value="D">Correct Answer: D</option>
+          </select>
+      `;
+      container.appendChild(div);
   }
-
-  function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
 
   async function deployQuiz() {
-      const qCard = document.querySelector('.quiz-question-card');
+      const cards = document.querySelectorAll('.quiz-question-card');
       const payload = {
           title: document.getElementById('qz-title').value,
           subject: document.getElementById('qz-subject').value,
-          durationMinutes: parseInt(document.getElementById('qz-duration').value),
+          durationMinutes: parseInt(document.getElementById('qz-duration').value) || 10,
           teacherName: user.name,
-          questions: [{
-              questionText: qCard.querySelector('.q-text').value,
-              optA: qCard.querySelector('.q-optA').value,
-              optB: qCard.querySelector('.q-optB').value,
-              optC: qCard.querySelector('.q-optC').value,
-              optD: qCard.querySelector('.q-optD').value,
-              correctOpt: qCard.querySelector('.q-correct').value
-          }]
+          questions: []
       };
 
-      if(!payload.title || !payload.subject || !payload.durationMinutes || !payload.questions[0].questionText) {
-          alert("Please fill in all quiz details and at least one question.");
+      let valid = true;
+      cards.forEach(card => {
+          const qText = card.querySelector('.q-text').value;
+          if(!qText) valid = false;
+          payload.questions.push({
+              questionText: qText,
+              optA: card.querySelector('.q-optA').value,
+              optB: card.querySelector('.q-optB').value,
+              optC: card.querySelector('.q-optC').value,
+              optD: card.querySelector('.q-optD').value,
+              correctOpt: card.querySelector('.q-correct').value
+          });
+      });
+
+      if(!payload.title || !payload.subject || !valid) {
+          alert("Please fill in the Quiz Title, Subject, and all Question texts.");
           return;
       }
 
       try {
           const res = await fetch('/api/quizzes/create', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
           });
 
           if(res.ok) {
               alert("Quiz Deployed Successfully to all Students!");
               document.getElementById('qz-title').value = '';
-              qCard.querySelectorAll('input').forEach(i => i.value = '');
-          } else {
-              alert("Server error deploying quiz.");
-          }
-      } catch (e) {
-          alert("Cannot connect to server.");
-      }
+              document.getElementById('qz-subject').value = '';
+              document.getElementById('qz-duration').value = '';
+              cards.forEach(c => c.querySelectorAll('input').forEach(i => i.value = ''));
+          } else { alert("Server error deploying quiz."); }
+      } catch (e) { alert("Cannot connect to server. Did you start the backend?"); }
   }
 
+  function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
 
-  // Initialize
-  loadDashboard();
-  checkBroadcast(); // INITIAL CALL ADDED
+  // Init
+  loadDashboard(); checkBroadcast();
 
-  function setTheme(themeName) {
-    // Remove existing theme classes
-    document.body.classList.remove('light-mode', 'midnight-mode');
-
-    // Add the selected one
-    if (themeName === 'light') document.body.classList.add('light-mode');
-    if (themeName === 'midnight') document.body.classList.add('midnight-mode');
-
-    // Save to browser memory
-    localStorage.setItem('hive_theme', themeName);
-}
-
-// Check for saved theme on page load
-function initTheme() {
-    const savedTheme = localStorage.getItem('hive_theme');
-    if (savedTheme) {
-        setTheme(savedTheme);
-    }
-}
-
-// Call initTheme at the start of your script
-initTheme();
+  // Themes
+  function setTheme(themeName) { document.body.classList.remove('light-mode', 'midnight-mode'); if (themeName === 'light') document.body.classList.add('light-mode'); if (themeName === 'midnight') document.body.classList.add('midnight-mode'); localStorage.setItem('hive_theme', themeName); }
+  function initTheme() { const savedTheme = localStorage.getItem('hive_theme'); if (savedTheme) setTheme(savedTheme); }
+  initTheme();
 </script>
 </body>
 </html>

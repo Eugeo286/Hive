@@ -12,6 +12,14 @@
 <div class="hive-watermark">HIVE</div>
 
 <div class="sidebar" id="sidebar">
+  <div class="theme-switcher" style="padding: 20px; border-top: 1px solid var(--border); margin-top: 20px;">
+    <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase;">Theme</p>
+    <div style="display: flex; gap: 10px;">
+      <button onclick="setTheme('light')" class="theme-btn" title="Light Mode" style="background:#fff; border:1px solid #ccc; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+      <button onclick="setTheme('hive')" class="theme-btn" title="Hive Classic" style="background:#D4880A; border:none; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+      <button onclick="setTheme('midnight')" class="theme-btn" title="Midnight" style="background:#1C222D; border:1px solid #38BDF8; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+    </div>
+  </div>
   <div style="display: flex; align-items: center; margin-bottom: 40px;">
     <div class="sb-hex"><i class="fa-solid fa-graduation-cap"></i></div>
     <div class="brand-title">The Hive</div>
@@ -19,97 +27,17 @@
   <div class="nav-item active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-house"></i> Dashboard</div>
   <div class="nav-item" onclick="switchTab('qa', this)"><i class="fa-solid fa-comments"></i> Q&A Board</div>
   <div class="nav-item" onclick="switchTab('resources', this)"><i class="fa-solid fa-book-open"></i> Resources & Library</div>
+  <div class="nav-item" onclick="switchTab('assignments', this)"><i class="fa-solid fa-clipboard-list"></i> Assignments</div>
+  <div class="nav-item" onclick="switchTab('sessions', this)"><i class="fa-solid fa-video"></i> Video Sessions</div>
   <div class="nav-item" onclick="switchTab('quizzes', this)"><i class="fa-solid fa-stopwatch"></i> Live Quizzes</div>
-  <div class="nav-item" style="margin-top: auto; color: var(--danger);" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+
+  <div class="nav-item" style="margin-top: auto; color: var(--danger); background: rgba(255, 76, 76, 0.1);" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
 </div>
 
 <div class="main">
-  <div id="view-resources" class="view-section">
-    <div class="content-grid">
-      <div class="panel">
-        <h2>Course Materials</h2>
-        <div style="display:flex; gap:10px; margin-bottom: 20px;">
-          <input type="text" id="r-search" placeholder="Course ID (e.g. CS101)">
-          <button class="btn-gold" style="width: 120px;" onclick="fetchResources()">Find</button>
-        </div>
-        <div id="resources-container" style="display: grid; gap: 10px;">Search a course...</div>
-      </div>
-    </div>
+  <div id="global-banner" style="display:none; background: #FF4C4C; color: white; padding: 12px 20px; text-align: center; font-weight: bold; border-radius: 10px; margin-bottom: 25px;">
+    <i class="fa-solid fa-bullhorn" style="margin-right: 10px;"></i> <span id="banner-text"></span>
   </div>
-
-        <div style="margin-bottom: 15px;">
-          <p style="font-weight: bold; margin-bottom: 10px;">1. What is JVM?</p>
-          <label style="display:block; margin-bottom:5px;"><input type="radio" name="q1" value="A"> Java Virtual Machine</label>
-          <label style="display:block; margin-bottom:5px;"><input type="radio" name="q1" value="B"> Java Visual Module</label>
-        </div>
-      </div>
-
-      <button class="btn-gold" onclick="submitQuiz()">Submit Answers</button>
-    </div>
-  </div>
-</div>
-
-<script>
-  // ... [Keep your existing script functions]
-
-  // Modify fetchResources to force DOWNLOAD instead of open
-  async function fetchResources() {
-      const course = document.getElementById('r-search').value;
-      if(!course) return;
-      document.getElementById('resources-container').innerHTML = "Searching...";
-
-      try {
-          const res = await fetch(`/api/hive/resources/${course}`);
-          const data = await res.json();
-          document.getElementById('resources-container').innerHTML = data.map(r => `
-              <div class="item-card">
-                  <div><strong><i class="fa-solid fa-file"></i> ${r.title}</strong></div>
-                  <a href="${r.link}" download="${r.title}" class="btn-action" style="background:var(--gold); color:#fff; border:none;">
-                      <i class="fa-solid fa-download"></i> Download
-                  </a>
-              </div>
-          `).join('') || "No local files found.";
-      } catch (e) {
-          document.getElementById('resources-container').innerHTML = "Error loading resources.";
-      }
-  }
-
-  // Live Quiz Logic
-  let quizInterval;
-  let timeLeft;
-
-  function startQuiz(quizId, durationMins) {
-      document.getElementById('quiz-list-panel').style.display = 'none';
-      document.getElementById('active-quiz-panel').style.display = 'block';
-
-      timeLeft = durationMins * 60;
-      updateTimerDisplay();
-
-      quizInterval = setInterval(() => {
-          timeLeft--;
-          updateTimerDisplay();
-          if (timeLeft <= 0) {
-              clearInterval(quizInterval);
-              alert("Time is up! Auto-submitting quiz.");
-              submitQuiz();
-          }
-      }, 1000);
-  }
-
-  function updateTimerDisplay() {
-      let m = Math.floor(timeLeft / 60);
-      let s = timeLeft % 60;
-      document.getElementById('quiz-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-  }
-
-  function submitQuiz() {
-      clearInterval(quizInterval);
-      alert("Quiz submitted! The system has auto-graded your answers. You scored 100%.");
-      document.getElementById('active-quiz-panel').style.display = 'none';
-      document.getElementById('quiz-list-panel').style.display = 'block';
-      // Backend integration: Post answers to /api/quizzes/submit
-  }
-</script>
 
   <div class="header">
     <div><h1 id="welcome-text">Welcome back</h1><p>Ready to earn some skill points today?</p></div>
@@ -133,18 +61,26 @@
         <h2>Ask the Hive</h2>
         <input type="text" id="q-title" placeholder="What's your question?">
         <input type="text" id="q-subject" placeholder="Subject (e.g., Math)">
-        <button class="btn-gold" onclick="postQuestion()">Post Question</button>
+        <button class="btn-gold" style="width:100%;" onclick="postQuestion()">Post Question</button>
       </div>
     </div>
   </div>
 
+  <div id="view-resources" class="view-section">
+    <div class="content-grid">
+      <div class="panel">
+        <h2>Course Materials</h2>
+        <div style="display:flex; gap:10px; margin-bottom: 20px;">
+          <input type="text" id="r-search" placeholder="Course ID (e.g. CS101)">
+          <button class="btn-gold" onclick="fetchResources()">Find</button>
+        </div>
+        <div id="resources-container" style="display: grid; gap: 10px;">Search a course...</div>
       </div>
       <div class="panel">
         <h2>Global Library Search</h2>
-        <p style="font-size: 13px; color: var(--text-2); margin-bottom: 15px;">Search millions of online books via Open Library.</p>
         <div style="display:flex; gap:10px; margin-bottom: 20px;">
           <input type="text" id="book-search" placeholder="Search topic or title...">
-          <button class="btn-gold" style="width: 120px;" onclick="searchBooks()">Search</button>
+          <button class="btn-gold" onclick="searchBooks()">Search</button>
         </div>
         <div id="books-container" style="display: grid; gap: 10px;">Search results will appear here...</div>
       </div>
@@ -156,27 +92,32 @@
   </div>
 
   <div id="view-sessions" class="view-section">
-    <div class="panel">
-      <h2>Upcoming Live Sessions</h2>
-      <div id="sessions-container" style="display:grid; gap:10px;">Loading...</div>
-    </div>
+    <div class="panel"><h2>Upcoming Live Sessions</h2><div id="sessions-container" style="display:grid; gap:10px;">Loading...</div></div>
   </div>
 
-<div id="view-quizzes" class="view-section">
-  <div class="panel" id="quiz-list-panel">
-    <h2>Available Quizzes</h2>
-    <div id="quizzes-container" style="display: grid; gap: 10px;">Loading quizzes...</div>
-  </div>
-
-  <div class="panel" id="active-quiz-panel" style="display: none; border-color: var(--gold);">
-    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 15px;">
-      <h2 style="margin:0; border:none; padding:0;">Live Quiz</h2>
-      <div style="font-size: 24px; font-family: 'Syne'; color: var(--danger); font-weight: bold;" id="quiz-timer">00:00</div>
+  <div id="view-quizzes" class="view-section">
+    <div class="panel" id="quiz-list-panel">
+      <h2>Available Quizzes</h2>
+      <div id="quizzes-container" style="display: grid; gap: 10px;">Loading quizzes...</div>
     </div>
-    <div id="quiz-questions-area" style="margin-bottom: 20px;"></div>
-    <button class="btn-gold" onclick="submitQuiz()">Submit Answers</button>
+
+    <div class="panel" id="active-quiz-panel" style="display: none; border: 2px solid var(--gold);">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
+        <h2 style="margin:0; border:none; padding:0;" id="active-quiz-title">Quiz</h2>
+        <div style="font-size: 24px; font-family: 'Syne'; color: var(--danger); font-weight: bold;" id="quiz-timer">00:00</div>
+      </div>
+
+      <div style="margin-bottom: 10px; color: var(--text-2); font-weight: bold;" id="question-counter">Question 1 of X</div>
+      <div id="quiz-single-question-area" style="margin-bottom: 30px; font-size: 18px;">
+      </div>
+
+      <div style="display: flex; justify-content: space-between;">
+        <button class="btn-action" id="btn-prev-q" style="display:none;" onclick="prevQuestion()"><i class="fa-solid fa-arrow-left"></i> Previous</button>
+        <button class="btn-gold" id="btn-next-q" onclick="nextQuestion()">Next Question <i class="fa-solid fa-arrow-right"></i></button>
+        <button class="btn-gold" id="btn-submit-q" style="display:none; background: var(--danger);" onclick="submitQuiz()">Submit Quiz</button>
+      </div>
+    </div>
   </div>
-</div>
 
 </div>
 
@@ -191,7 +132,7 @@
 
   function switchTab(tabId, element) {
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      element.classList.add('active');
+      if(element) element.classList.add('active');
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
       document.getElementById('view-' + tabId).classList.add('active');
 
@@ -200,24 +141,16 @@
       if(tabId === 'sessions') fetchSessions();
       if(tabId === 'quizzes') fetchQuizzes();
   }
-  }
 
-  // FIXED: Added Broadcast Check Function
+  // --- EXISTING LOGIC ---
   async function checkBroadcast() {
-      try {
-          const res = await fetch('/api/admin/broadcast/latest');
-          const data = await res.json();
-          if(data && data.message) {
-              document.getElementById('global-banner').style.display = 'block';
-              document.getElementById('banner-text').innerText = data.message;
-          }
-      } catch(e) { console.log("No active broadcasts."); }
+      try { const res = await fetch('/api/admin/broadcast/latest'); const data = await res.json();
+          if(data && data.message) { document.getElementById('global-banner').style.display = 'block'; document.getElementById('banner-text').innerText = data.message; }
+      } catch(e) {}
   }
 
-  // Q&A Logic
   async function fetchQuestions() {
-      const res = await fetch('/api/hive/questions');
-      const data = await res.json();
+      const data = await (await fetch('/api/hive/questions')).json();
       document.getElementById('stat-questions').innerText = data.length;
       document.getElementById('questions-container').innerHTML = data.map(q => `
           <div class="item-card">
@@ -231,36 +164,32 @@
       const title = document.getElementById('q-title').value, subject = document.getElementById('q-subject').value;
       if(!title || !subject) return;
       await fetch('/api/hive/questions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, subject, difficulty: "Medium", authorName: user.name }) });
-      document.getElementById('q-title').value = '';
-      document.getElementById('q-subject').value = '';
-      fetchQuestions();
+      document.getElementById('q-title').value = ''; document.getElementById('q-subject').value = ''; fetchQuestions();
   }
 
   async function answerPrompt(id) {
       const text = prompt("Enter your answer to help your peer:");
       if(text) {
-          await fetch(`/api/hive/questions/${id}/answers`, {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ text, authorName: user.name })
-          });
-          alert("Answer posted! +10 points.");
-
-          user.points += 10;
-          localStorage.setItem('hive_user', JSON.stringify(user));
-          document.getElementById('user-points').innerText = user.points;
-
-          fetchQuestions();
+          await fetch(`/api/hive/questions/${id}/answers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, authorName: user.name }) });
+          user.points += 10; localStorage.setItem('hive_user', JSON.stringify(user)); document.getElementById('user-points').innerText = user.points; fetchQuestions();
       }
   }
 
+  // RESOURCES FIXED TO DOWNLOAD
   async function fetchResources() {
       const course = document.getElementById('r-search').value;
       if(!course) return;
       document.getElementById('resources-container').innerHTML = "Searching...";
-      const data = await (await fetch(`/api/hive/resources/${course}`)).json();
-      document.getElementById('resources-container').innerHTML = data.map(r => `
-          <div class="item-card"><div><strong>${r.title}</strong></div><a href="${r.link}" target="_blank" class="btn-action">Open</a></div>
-      `).join('') || "No local files found.";
+      try {
+          const res = await fetch(`/api/hive/resources/${course}`);
+          const data = await res.json();
+          document.getElementById('resources-container').innerHTML = data.map(r => `
+              <div class="item-card">
+                  <div><strong><i class="fa-solid fa-file"></i> ${r.title}</strong></div>
+                  <a href="${r.link}" download="${r.title}" class="btn-action" style="background:var(--gold); color:#fff; border:none;"><i class="fa-solid fa-download"></i> Download</a>
+              </div>
+          `).join('') || "No local files found.";
+      } catch (e) { document.getElementById('resources-container').innerHTML = "Error loading resources."; }
   }
 
   async function searchBooks() {
@@ -268,19 +197,15 @@
       if(!query) return;
       document.getElementById('books-container').innerHTML = "Searching global library...";
       try {
-          const res = await fetch(`/api/hive/books/${query}`);
-          const data = await res.json();
+          const data = await (await fetch(`/api/hive/books/${query}`)).json();
           if(data.docs && data.docs.length > 0) {
               document.getElementById('books-container').innerHTML = data.docs.map(book => `
                   <div class="item-card" style="flex-direction:column; align-items:flex-start;">
                       <div style="font-weight:bold;">${book.title}</div>
-                      <div style="font-size:12px; color:var(--text-2); margin-bottom: 10px;">By: ${book.author_name ? book.author_name.join(', ') : 'Unknown'}</div>
-                      <a href="https://openlibrary.org${book.key}" target="_blank" class="btn-action" style="width:100%; text-align:center;">Read Online</a>
+                      <a href="https://openlibrary.org${book.key}" target="_blank" class="btn-action" style="margin-top:10px;">Read Online</a>
                   </div>
               `).join('');
-          } else {
-              document.getElementById('books-container').innerHTML = "No books found.";
-          }
+          } else { document.getElementById('books-container').innerHTML = "No books found."; }
       } catch(e) { document.getElementById('books-container').innerHTML = "Library service unavailable."; }
   }
 
@@ -289,7 +214,6 @@
       document.getElementById('assignments-container').innerHTML = data.map(a => `
           <div class="item-card" style="flex-direction:column; align-items:flex-start;">
               <strong>${a.title}</strong><div style="font-size:14px; margin: 5px 0;">${a.description}</div>
-              <div style="font-size:12px; color: var(--danger);">Deadline: ${new Date(a.deadline).toLocaleString()}</div>
               <button class="btn-action" style="margin-top:10px;" onclick="submitAssignment(${a.id})">Submit Work</button>
           </div>
       `).join('') || "No active assignments.";
@@ -297,32 +221,23 @@
 
   function submitAssignment(id) {
       const content = prompt("Enter submission text or document link:");
-      if(content) fetch(`/api/hive/assignments/${id}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentName: user.name, content }) }).then(async (res) => {
-          if(res.ok) alert("Assignment Submitted Successfully.");
-          else alert(await res.text());
-      });
+      if(content) fetch(`/api/hive/assignments/${id}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentName: user.name, content }) }).then(res => alert("Submitted!"));
   }
 
   async function fetchSessions() {
-      try {
-          const data = await (await fetch('/api/hive/sessions')).json();
-          document.getElementById('sessions-container').innerHTML = data.map(s => `
-              <div class="item-card">
-                  <div>
-                      <strong>${s.topic}</strong> (${s.subject})<br>
-                      <span style="font-size:12px; color:var(--text-2);">Host: ${s.host} | Time: ${new Date(s.scheduledTime).toLocaleString()}</span>
-                  </div>
-                  <a href="${s.meetingLink}" target="_blank" class="btn-action" style="text-decoration:none; background: var(--gold); color: white; border: none;">Join Meeting</a>
-              </div>
-          `).join('') || "No upcoming sessions at the moment.";
-      } catch(e) { document.getElementById('sessions-container').innerHTML = "Error loading sessions."; }
+      const data = await (await fetch('/api/hive/sessions')).json();
+      document.getElementById('sessions-container').innerHTML = data.map(s => `
+          <div class="item-card"><div><strong>${s.topic}</strong></div><a href="${s.meetingLink}" target="_blank" class="btn-action">Join</a></div>
+      `).join('') || "No upcoming sessions.";
   }
 
-  // --- LIVE QUIZ LOGIC ---
+  // --- NEW: PAGINATED QUIZ LOGIC ---
   let currentQuizQuestions = [];
   let currentQuizId = null;
   let quizInterval;
   let timeLeft;
+  let currentQIndex = 0;
+  let studentAnswers = {};
 
   async function fetchQuizzes() {
       try {
@@ -331,33 +246,30 @@
           document.getElementById('quizzes-container').innerHTML = data.map(q => `
               <div class="item-card">
                   <div><strong>${q.title}</strong><br><span style="font-size:12px;">${q.subject} | ${q.durationMinutes} Minutes</span></div>
-                  <button class="btn-action" onclick="startQuiz(${q.id}, ${q.durationMinutes}, '${q.title}')">Start Quiz</button>
+                  <button class="btn-action" style="background: var(--gold); color: white;" onclick="startQuiz(${q.id}, ${q.durationMinutes}, '${q.title}')">Start Quiz</button>
               </div>
           `).join('') || "No active quizzes.";
-      } catch (e) {
-          document.getElementById('quizzes-container').innerHTML = "Error loading quizzes.";
-      }
+      } catch (e) { document.getElementById('quizzes-container').innerHTML = "Could not connect to Quiz server."; }
   }
 
   async function startQuiz(quizId, durationMins, title) {
       currentQuizId = quizId;
+      currentQIndex = 0;
+      studentAnswers = {}; // reset answers
+
       const res = await fetch(`/api/quizzes/${quizId}/questions`);
       currentQuizQuestions = await res.json();
 
-      document.getElementById('quiz-list-panel').style.display = 'none';
-      const activePanel = document.getElementById('active-quiz-panel');
-      activePanel.style.display = 'block';
-      activePanel.querySelector('h2').innerText = title;
+      if(currentQuizQuestions.length === 0) {
+          alert("This quiz has no questions yet!");
+          return;
+      }
 
-      document.getElementById('quiz-questions-area').innerHTML = currentQuizQuestions.map((q, index) => `
-          <div style="margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px;">
-              <p style="font-weight: bold; margin-bottom: 10px;">${index + 1}. ${q.questionText}</p>
-              <label style="display:block; margin-bottom:5px;"><input type="radio" name="q${q.id}" value="A"> A) ${q.optA}</label>
-              <label style="display:block; margin-bottom:5px;"><input type="radio" name="q${q.id}" value="B"> B) ${q.optB}</label>
-              <label style="display:block; margin-bottom:5px;"><input type="radio" name="q${q.id}" value="C"> C) ${q.optC}</label>
-              <label style="display:block; margin-bottom:5px;"><input type="radio" name="q${q.id}" value="D"> D) ${q.optD}</label>
-          </div>
-      `).join('');
+      document.getElementById('quiz-list-panel').style.display = 'none';
+      document.getElementById('active-quiz-panel').style.display = 'block';
+      document.getElementById('active-quiz-title').innerText = title;
+
+      renderQuestion();
 
       timeLeft = durationMins * 60;
       updateTimerDisplay();
@@ -372,6 +284,59 @@
       }, 1000);
   }
 
+  function renderQuestion() {
+      let q = currentQuizQuestions[currentQIndex];
+      document.getElementById('question-counter').innerText = `Question ${currentQIndex + 1} of ${currentQuizQuestions.length}`;
+
+      // Keep previously selected answer checked if they go back
+      let selA = studentAnswers[q.id] === 'A' ? 'checked' : '';
+      let selB = studentAnswers[q.id] === 'B' ? 'checked' : '';
+      let selC = studentAnswers[q.id] === 'C' ? 'checked' : '';
+      let selD = studentAnswers[q.id] === 'D' ? 'checked' : '';
+
+      document.getElementById('quiz-single-question-area').innerHTML = `
+          <p style="font-weight: bold; margin-bottom: 20px;">${q.questionText}</p>
+          <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px;">
+              <label style="display:block; padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border);"><input type="radio" name="activeQ" value="A" ${selA}> A) ${q.optA}</label>
+              <label style="display:block; padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border);"><input type="radio" name="activeQ" value="B" ${selB}> B) ${q.optB}</label>
+              <label style="display:block; padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border);"><input type="radio" name="activeQ" value="C" ${selC}> C) ${q.optC}</label>
+              <label style="display:block; padding: 10px; cursor: pointer;"><input type="radio" name="activeQ" value="D" ${selD}> D) ${q.optD}</label>
+          </div>
+      `;
+
+      // Manage buttons
+      document.getElementById('btn-prev-q').style.display = currentQIndex > 0 ? 'inline-block' : 'none';
+      if(currentQIndex === currentQuizQuestions.length - 1) {
+          document.getElementById('btn-next-q').style.display = 'none';
+          document.getElementById('btn-submit-q').style.display = 'inline-block';
+      } else {
+          document.getElementById('btn-next-q').style.display = 'inline-block';
+          document.getElementById('btn-submit-q').style.display = 'none';
+      }
+  }
+
+  function saveCurrentAnswer() {
+      let q = currentQuizQuestions[currentQIndex];
+      let selected = document.querySelector('input[name="activeQ"]:checked');
+      if(selected) studentAnswers[q.id] = selected.value;
+  }
+
+  function nextQuestion() {
+      saveCurrentAnswer();
+      if(currentQIndex < currentQuizQuestions.length - 1) {
+          currentQIndex++;
+          renderQuestion();
+      }
+  }
+
+  function prevQuestion() {
+      saveCurrentAnswer();
+      if(currentQIndex > 0) {
+          currentQIndex--;
+          renderQuestion();
+      }
+  }
+
   function updateTimerDisplay() {
       let m = Math.floor(timeLeft / 60);
       let s = timeLeft % 60;
@@ -379,16 +344,16 @@
   }
 
   async function submitQuiz() {
+      saveCurrentAnswer(); // save the last question
       clearInterval(quizInterval);
+
       let score = 0;
       currentQuizQuestions.forEach(q => {
-          const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
-          if (selected && selected.value === q.correctOpt) score++;
+          if (studentAnswers[q.id] === q.correctOpt) score++;
       });
 
       await fetch('/api/quizzes/submit-attempt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ quizId: currentQuizId, studentName: user.name, score: score, total: currentQuizQuestions.length })
       });
 
@@ -400,32 +365,14 @@
 
   function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
 
-  // Load initial data
+  // Init
   fetchQuestions();
-  checkBroadcast(); // INITIAL CALL ADDED
+  checkBroadcast();
 
-  function setTheme(themeName) {
-    // Remove existing theme classes
-    document.body.classList.remove('light-mode', 'midnight-mode');
-
-    // Add the selected one
-    if (themeName === 'light') document.body.classList.add('light-mode');
-    if (themeName === 'midnight') document.body.classList.add('midnight-mode');
-
-    // Save to browser memory
-    localStorage.setItem('hive_theme', themeName);
-}
-
-// Check for saved theme on page load
-function initTheme() {
-    const savedTheme = localStorage.getItem('hive_theme');
-    if (savedTheme) {
-        setTheme(savedTheme);
-    }
-}
-
-// Call initTheme at the start of your script
-initTheme();
+  // Themes
+  function setTheme(themeName) { document.body.classList.remove('light-mode', 'midnight-mode'); if (themeName === 'light') document.body.classList.add('light-mode'); if (themeName === 'midnight') document.body.classList.add('midnight-mode'); localStorage.setItem('hive_theme', themeName); }
+  function initTheme() { const savedTheme = localStorage.getItem('hive_theme'); if (savedTheme) setTheme(savedTheme); }
+  initTheme();
 </script>
 </body>
 </html>

@@ -107,4 +107,30 @@ public class AdminController {
             return ResponseEntity.status(500).body("Failed to clear.");
         }
     }
+
+    // ══════════════════════════════════════════════════════
+    // 4. STUDENT PROGRESS (QUIZ MONITORING)
+    // ══════════════════════════════════════════════════════
+    @GetMapping("/quiz-results")
+    public ResponseEntity<List<Map<String, Object>>> getQuizResults() {
+        List<Map<String, Object>> results = new ArrayList<>();
+        // Fetches all attempts, newest first
+        String sql = "SELECT student_name, quiz_id, score, total, taken_at FROM quiz_attempts ORDER BY taken_at DESC";
+
+        try (Connection c = DBUtil.getConnection(); Statement s = c.createStatement(); ResultSet rs = s.executeQuery(sql)) {
+            while (rs.next()) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("student_name", rs.getString("student_name"));
+                map.put("quiz_id", rs.getInt("quiz_id"));
+                map.put("score", rs.getInt("score"));
+                map.put("total", rs.getInt("total"));
+                map.put("taken_at", rs.getTimestamp("taken_at").toString());
+                results.add(map);
+            }
+            return ResponseEntity.ok(results);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
+    }
 }
