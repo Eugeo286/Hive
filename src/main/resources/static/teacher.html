@@ -6,12 +6,13 @@
   <title>The Hive | Faculty Portal</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="shared.css">
-  <style>
-    :root { --primary: #2980B9; }
-    .sb-hex { background: linear-gradient(135deg, var(--primary), #1A5276); }
-    .nav-item.active { background: var(--primary); }
-    .btn-gold { background: linear-gradient(135deg, var(--primary), #1A5276); }
-  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <style>
+  :root { --primary: #2980B9; }
+  .sb-hex { background: linear-gradient(135deg, var(--primary), #1A5276); }
+  .nav-item.active { background: var(--primary); }
+  .btn-gold { background: linear-gradient(135deg, var(--primary), #1A5276); }
+  .badge { background: linear-gradient(135deg, var(--primary), #1A5276); }
+</style>
 </head>
 <body>
 
@@ -46,14 +47,38 @@
   </div>
 
   <div class="header">
-    <div><h1 id="welcome-text">Faculty Dashboard</h1></div>
-    <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    <div>
+      <h1 id="welcome-text">Faculty Dashboard</h1>
+    </div>
+    <div class="header-profile">
+      <span class="badge">Professor</span>
+      <img id="user-avatar" src="" class="avatar" alt="Faculty Avatar" style="border-color: var(--primary);">
+      <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    </div>
   </div>
 
   <div id="view-dashboard" class="view-section active">
     <div class="stats-row">
       <div class="stat-card" style="border-left: 4px solid var(--danger);"><div class="stat-title">Urgent Queries</div><div class="stat-val" style="color:var(--danger);" id="stat-urgent">0</div></div>
+      <div class="stat-card" style="border-left: 4px solid var(--primary);"><div class="stat-title">Platform Engagement</div><div class="stat-val" style="color:var(--primary);" id="stat-engagement">0</div></div>
     </div>
+
+    <div class="content-grid">
+      <div class="panel">
+        <h2>Engagement by Subject</h2>
+        <div class="chart-container">
+          <canvas id="teacherChart"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Needs Grading</h2>
+        <p style="font-size: 13px; color: var(--text-2); margin-bottom: 10px;">Recent assignment submissions waiting for your review.</p>
+        <div id="dash-grading" class="activity-feed">
+          <div class="feed-item"><div class="feed-text">Loading items...</div></div>
+        </div>
+      </div>
+    </div>
+
     <div class="panel" style="margin-top: 20px;">
       <h2 style="color: var(--danger);">Needs Attention (24h+)</h2>
       <div id="urgent-container" style="display:grid; gap:10px;">Loading...</div>
@@ -151,7 +176,9 @@
 <script>
   const user = JSON.parse(localStorage.getItem('hive_user'));
   if (!user || user.role !== 'teacher') window.location.href = "index.html";
+
   document.getElementById('welcome-text').innerText = `Professor ${user.name}`;
+  document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`;
 
   function toggleSidebar() { document.getElementById('sidebar').classList.toggle('mobile-open'); }
 
@@ -165,14 +192,15 @@
       if(tabId === 'sessions') fetchSessions();
   }
 
-  // --- EXISTING LOGIC ---
   async function checkBroadcast() {
       try { const res = await fetch('/api/admin/broadcast/latest'); const data = await res.json();
           if(data && data.message) { document.getElementById('global-banner').style.display = 'block'; document.getElementById('banner-text').innerText = data.message; }
       } catch(e) { }
   }
 
+  // --- ENHANCED DASHBOARD LOGIC ---
   async function loadDashboard() {
+      // 1. Existing Urgent logic
       try {
           const res = await fetch('/api/hive/questions/urgent'); const data = await res.json();
           document.getElementById('stat-urgent').innerText = data.length;
@@ -183,8 +211,48 @@
               </div>
           `).join('') || "No urgent questions.";
       } catch(e) {}
+
+      // 2. Chart.js Implementation (Engagement by Subject)
+      try {
+          const res = await fetch('/api/hive/stats/subjects');
+          const data = await res.json();
+
+          let total = Object.values(data).reduce((a,b)=>a+b, 0);
+          document.getElementById('stat-engagement').innerText = total;
+
+          const ctx = document.getElementById('teacherChart').getContext('2d');
+          if (window.teacherChartInstance) window.teacherChartInstance.destroy();
+          window.teacherChartInstance = new Chart(ctx, {
+              type: 'doughnut',
+              data: {
+                  labels: Object.keys(data),
+                  datasets: [{
+                      data: Object.values(data),
+                      backgroundColor: ['#2980B9', '#D4880A', '#4CAF50', '#FF4C4C', '#9B59B6'],
+                      borderWidth: 0
+                  }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#D1BFA5' } } } }
+          });
+      } catch(e) {}
+
+      // 3. Needs Grading Widget
+      try {
+          const res = await fetch('/api/hive/assignments/all');
+          const assignments = await res.json();
+          const recent = assignments.reverse().slice(0, 4); // Get 4 newest
+
+          document.getElementById('dash-grading').innerHTML = recent.map(a => `
+              <div class="feed-item">
+                  <div class="feed-time" style="color: var(--primary);">Deployed: ${new Date(a.deadline).toLocaleDateString()}</div>
+                  <div class="feed-text"><strong>${a.title}</strong> (${a.course})</div>
+                  <button class="btn-action" style="padding: 4px 10px; font-size: 11px; margin-top: 5px; border-color: var(--primary); color: var(--primary);" onclick="switchTab('assignments', document.querySelectorAll('.nav-item')[2])">Review Submissions</button>
+              </div>
+          `).join('') || "<div class='feed-item'><div class='feed-text'>No recent assignments to grade.</div></div>";
+      } catch(e) {}
   }
 
+  // --- ALL OTHER EXISTING LOGIC ---
   async function uploadResource() {
       const fileInput = document.getElementById('r-file'); if(!fileInput.files.length) return alert("Select a file.");
       const formData = new FormData(); formData.append("file", fileInput.files[0]); formData.append("title", document.getElementById('r-title').value); formData.append("course", document.getElementById('r-course').value); formData.append("postedBy", user.name);
@@ -207,7 +275,7 @@
   async function postAssignment() {
       const payload = { title: document.getElementById('a-title').value, course: document.getElementById('a-course').value, description: document.getElementById('a-desc').value, deadline: document.getElementById('a-deadline').value, answerText: document.getElementById('a-key').value, teacherName: user.name };
       const res = await fetch('/api/hive/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if(res.ok) { alert("Deployed!"); ['a-title','a-course','a-desc','a-deadline','a-key'].forEach(id => document.getElementById(id).value = ''); }
+      if(res.ok) { alert("Deployed!"); ['a-title','a-course','a-desc','a-deadline','a-key'].forEach(id => document.getElementById(id).value = ''); loadDashboard(); }
   }
 
   async function scheduleSession() {
@@ -224,9 +292,7 @@
   }
   async function deleteSession(id) { await fetch(`/api/hive/sessions/${id}`, { method: 'DELETE' }); fetchSessions(); }
 
-  // --- NEW: QUIZ BUILDER LOGIC ---
   let questionCount = 1;
-
   function addQuestionBlock() {
       questionCount++;
       const container = document.getElementById('qz-questions-list');
@@ -243,10 +309,7 @@
               <input type="text" class="q-optD" placeholder="Option D">
           </div>
           <select class="q-correct" style="width:200px;">
-              <option value="A">Correct Answer: A</option>
-              <option value="B">Correct Answer: B</option>
-              <option value="C">Correct Answer: C</option>
-              <option value="D">Correct Answer: D</option>
+              <option value="A">Correct Answer: A</option><option value="B">Correct Answer: B</option><option value="C">Correct Answer: C</option><option value="D">Correct Answer: D</option>
           </select>
       `;
       container.appendChild(div);
@@ -254,46 +317,19 @@
 
   async function deployQuiz() {
       const cards = document.querySelectorAll('.quiz-question-card');
-      const payload = {
-          title: document.getElementById('qz-title').value,
-          subject: document.getElementById('qz-subject').value,
-          durationMinutes: parseInt(document.getElementById('qz-duration').value) || 10,
-          teacherName: user.name,
-          questions: []
-      };
-
+      const payload = { title: document.getElementById('qz-title').value, subject: document.getElementById('qz-subject').value, durationMinutes: parseInt(document.getElementById('qz-duration').value) || 10, teacherName: user.name, questions: [] };
       let valid = true;
       cards.forEach(card => {
-          const qText = card.querySelector('.q-text').value;
-          if(!qText) valid = false;
-          payload.questions.push({
-              questionText: qText,
-              optA: card.querySelector('.q-optA').value,
-              optB: card.querySelector('.q-optB').value,
-              optC: card.querySelector('.q-optC').value,
-              optD: card.querySelector('.q-optD').value,
-              correctOpt: card.querySelector('.q-correct').value
-          });
+          const qText = card.querySelector('.q-text').value; if(!qText) valid = false;
+          payload.questions.push({ questionText: qText, optA: card.querySelector('.q-optA').value, optB: card.querySelector('.q-optB').value, optC: card.querySelector('.q-optC').value, optD: card.querySelector('.q-optD').value, correctOpt: card.querySelector('.q-correct').value });
       });
-
-      if(!payload.title || !payload.subject || !valid) {
-          alert("Please fill in the Quiz Title, Subject, and all Question texts.");
-          return;
-      }
+      if(!payload.title || !payload.subject || !valid) return alert("Please fill in the Quiz Title, Subject, and all Question texts.");
 
       try {
-          const res = await fetch('/api/quizzes/create', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-          });
-
-          if(res.ok) {
-              alert("Quiz Deployed Successfully to all Students!");
-              document.getElementById('qz-title').value = '';
-              document.getElementById('qz-subject').value = '';
-              document.getElementById('qz-duration').value = '';
-              cards.forEach(c => c.querySelectorAll('input').forEach(i => i.value = ''));
-          } else { alert("Server error deploying quiz."); }
-      } catch (e) { alert("Cannot connect to server. Did you start the backend?"); }
+          const res = await fetch('/api/quizzes/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          if(res.ok) { alert("Quiz Deployed!"); document.getElementById('qz-title').value = ''; document.getElementById('qz-subject').value = ''; document.getElementById('qz-duration').value = ''; cards.forEach(c => c.querySelectorAll('input').forEach(i => i.value = '')); }
+          else { alert("Server error."); }
+      } catch (e) { alert("Cannot connect to server."); }
   }
 
   function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
@@ -301,7 +337,6 @@
   // Init
   loadDashboard(); checkBroadcast();
 
-  // Themes
   function setTheme(themeName) { document.body.classList.remove('light-mode', 'midnight-mode'); if (themeName === 'light') document.body.classList.add('light-mode'); if (themeName === 'midnight') document.body.classList.add('midnight-mode'); localStorage.setItem('hive_theme', themeName); }
   function initTheme() { const savedTheme = localStorage.getItem('hive_theme'); if (savedTheme) setTheme(savedTheme); }
   initTheme();

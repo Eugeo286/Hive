@@ -12,7 +12,7 @@ public class DatabaseImporter {
         String url = "jdbc:mysql://gondola.proxy.rlwy.net:52921/railway";
         String user = "root";
         String pass = "uKIpTBuqRQKaySoaaWRvbiLrcbaQZjJz";
-        String filePath = "C:\\Users\\HP\\Downloads\\hive.sql";
+        String filePath = "C:\\Users\\HP\\quizzes.sql";
 
         try (Connection conn = DriverManager.getConnection(url, user, pass)) {
             System.out.println("Connected to Railway! Importing tables...");

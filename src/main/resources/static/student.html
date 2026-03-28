@@ -6,7 +6,7 @@
   <title>The Hive | Student Portal</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="shared.css">
-</head>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> </head>
 <body>
 
 <div class="hive-watermark">HIVE</div>
@@ -40,14 +40,41 @@
   </div>
 
   <div class="header">
-    <div><h1 id="welcome-text">Welcome back</h1><p>Ready to earn some skill points today?</p></div>
-    <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    <div>
+      <h1 id="welcome-text">Welcome back</h1>
+      <p>Ready to earn some skill points today?</p>
+    </div>
+    <div class="header-profile">
+      <img id="user-avatar" src="" class="avatar" alt="User Avatar">
+      <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+    </div>
   </div>
 
   <div id="view-dashboard" class="view-section active">
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-title">My Skill Points</div><div class="stat-val" id="user-points" style="color:var(--gold);">0</div></div>
-      <div class="stat-card"><div class="stat-title">Community Questions</div><div class="stat-val" id="stat-questions">--</div></div>
+      <div class="stat-card">
+        <div class="stat-title">My Skill Points <span id="user-badge" class="badge">Novice</span></div>
+        <div class="stat-val" id="user-points" style="color:var(--gold);">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Next Live Session</div>
+        <div class="stat-val" id="dash-next-session" style="font-size: 20px; margin-top: 15px;">Loading...</div>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <div class="panel">
+        <h2>Skill Progression</h2>
+        <div class="chart-container">
+          <canvas id="studentChart"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Upcoming Deadlines</h2>
+        <div id="dash-deadlines" class="activity-feed">
+          <div class="feed-item"><div class="feed-text">Loading deadlines...</div></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -118,7 +145,6 @@
       </div>
     </div>
   </div>
-
 </div>
 
 <script>
@@ -127,6 +153,10 @@
 
   document.getElementById('welcome-text').innerText = `Welcome, ${user.name}`;
   document.getElementById('user-points').innerText = user.points;
+
+  // Set Avatar and Badge based on points
+  document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`;
+  document.getElementById('user-badge').innerText = user.points >= 100 ? 'Scholar 🏆' : (user.points >= 50 ? 'Apprentice 🥈' : 'Novice 🥉');
 
   function toggleSidebar() { document.getElementById('sidebar').classList.toggle('mobile-open'); }
 
@@ -142,7 +172,56 @@
       if(tabId === 'quizzes') fetchQuizzes();
   }
 
-  // --- EXISTING LOGIC ---
+  // --- NEW DASHBOARD LIVELINESS LOGIC ---
+  async function loadDashboardWidgets() {
+      // 1. Chart.js Implementation
+      const ctx = document.getElementById('studentChart').getContext('2d');
+      new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: ['Start', 'Week 2', 'Week 3', 'Week 4', 'Now'],
+              datasets: [{
+                  label: 'Skill Points',
+                  data: [0, Math.floor(user.points * 0.2), Math.floor(user.points * 0.5), Math.floor(user.points * 0.8), user.points],
+                  borderColor: '#D4880A', backgroundColor: 'rgba(212, 136, 10, 0.2)',
+                  borderWidth: 3, tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#fff'
+              }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#D1BFA5'} }, x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#D1BFA5'} } } }
+      });
+
+      // 2. Fetch Deadlines Widget
+      try {
+          const res = await fetch('/api/hive/assignments/all');
+          const data = await res.json();
+          const now = new Date();
+          const upcoming = data.filter(a => new Date(a.deadline) > now).sort((a,b) => new Date(a.deadline) - new Date(b.deadline)).slice(0, 4);
+
+          document.getElementById('dash-deadlines').innerHTML = upcoming.map(a => `
+              <div class="feed-item">
+                  <div class="feed-time" style="color: var(--danger);">Due: ${new Date(a.deadline).toLocaleDateString()}</div>
+                  <div class="feed-text"><strong>${a.title}</strong><br><span style="font-size:12px; color:var(--text-2);">${a.course}</span></div>
+              </div>
+          `).join('') || "<div class='feed-item'><div class='feed-text'>No upcoming deadlines! Take a break. 🎉</div></div>";
+      } catch(e) {}
+
+      // 3. Fetch Next Session Widget
+      try {
+          const res = await fetch('/api/hive/sessions');
+          const data = await res.json();
+          const now = new Date();
+          const upcoming = data.filter(s => new Date(s.scheduledTime) > now).sort((a,b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
+
+          if(upcoming.length > 0) {
+              let s = upcoming[0];
+              document.getElementById('dash-next-session').innerHTML = `<div style="font-size:18px; color: #fff;">${s.topic}</div><div style="font-size:13px; color:var(--text-2); margin-top:5px;"><i class="fa-regular fa-clock"></i> ${new Date(s.scheduledTime).toLocaleString()}</div>`;
+          } else {
+              document.getElementById('dash-next-session').innerHTML = "<span style='font-size:14px; color:var(--text-2);'>No scheduled sessions.</span>";
+          }
+      } catch(e) {}
+  }
+
+  // --- EXISTING API LOGIC ---
   async function checkBroadcast() {
       try { const res = await fetch('/api/admin/broadcast/latest'); const data = await res.json();
           if(data && data.message) { document.getElementById('global-banner').style.display = 'block'; document.getElementById('banner-text').innerText = data.message; }
@@ -151,11 +230,10 @@
 
   async function fetchQuestions() {
       const data = await (await fetch('/api/hive/questions')).json();
-      document.getElementById('stat-questions').innerText = data.length;
       document.getElementById('questions-container').innerHTML = data.map(q => `
           <div class="item-card">
               <div><strong>${q.title}</strong><br><span style="font-size:12px; color:var(--text-2);">${q.subject}</span></div>
-              ${!q.answered ? `<button class="btn-action" onclick="answerPrompt(${q.id})">Answer</button>` : '<span>✓</span>'}
+              ${!q.answered ? `<button class="btn-action" onclick="answerPrompt(${q.id})">Answer</button>` : '<span style="color: #4CAF50;">✓ Answered</span>'}
           </div>
       `).join('');
   }
@@ -171,11 +249,13 @@
       const text = prompt("Enter your answer to help your peer:");
       if(text) {
           await fetch(`/api/hive/questions/${id}/answers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, authorName: user.name }) });
-          user.points += 10; localStorage.setItem('hive_user', JSON.stringify(user)); document.getElementById('user-points').innerText = user.points; fetchQuestions();
+          user.points += 10; localStorage.setItem('hive_user', JSON.stringify(user));
+          document.getElementById('user-points').innerText = user.points;
+          document.getElementById('user-badge').innerText = user.points >= 100 ? 'Scholar 🏆' : (user.points >= 50 ? 'Apprentice 🥈' : 'Novice 🥉');
+          fetchQuestions();
       }
   }
 
-  // RESOURCES FIXED TO DOWNLOAD
   async function fetchResources() {
       const course = document.getElementById('r-search').value;
       if(!course) return;
@@ -231,7 +311,7 @@
       `).join('') || "No upcoming sessions.";
   }
 
-  // --- NEW: PAGINATED QUIZ LOGIC ---
+  // --- QUIZ WIZARD LOGIC ---
   let currentQuizQuestions = [];
   let currentQuizId = null;
   let quizInterval;
@@ -255,7 +335,7 @@
   async function startQuiz(quizId, durationMins, title) {
       currentQuizId = quizId;
       currentQIndex = 0;
-      studentAnswers = {}; // reset answers
+      studentAnswers = {};
 
       const res = await fetch(`/api/quizzes/${quizId}/questions`);
       currentQuizQuestions = await res.json();
@@ -288,7 +368,6 @@
       let q = currentQuizQuestions[currentQIndex];
       document.getElementById('question-counter').innerText = `Question ${currentQIndex + 1} of ${currentQuizQuestions.length}`;
 
-      // Keep previously selected answer checked if they go back
       let selA = studentAnswers[q.id] === 'A' ? 'checked' : '';
       let selB = studentAnswers[q.id] === 'B' ? 'checked' : '';
       let selC = studentAnswers[q.id] === 'C' ? 'checked' : '';
@@ -304,7 +383,6 @@
           </div>
       `;
 
-      // Manage buttons
       document.getElementById('btn-prev-q').style.display = currentQIndex > 0 ? 'inline-block' : 'none';
       if(currentQIndex === currentQuizQuestions.length - 1) {
           document.getElementById('btn-next-q').style.display = 'none';
@@ -323,34 +401,25 @@
 
   function nextQuestion() {
       saveCurrentAnswer();
-      if(currentQIndex < currentQuizQuestions.length - 1) {
-          currentQIndex++;
-          renderQuestion();
-      }
+      if(currentQIndex < currentQuizQuestions.length - 1) { currentQIndex++; renderQuestion(); }
   }
 
   function prevQuestion() {
       saveCurrentAnswer();
-      if(currentQIndex > 0) {
-          currentQIndex--;
-          renderQuestion();
-      }
+      if(currentQIndex > 0) { currentQIndex--; renderQuestion(); }
   }
 
   function updateTimerDisplay() {
-      let m = Math.floor(timeLeft / 60);
-      let s = timeLeft % 60;
+      let m = Math.floor(timeLeft / 60); let s = timeLeft % 60;
       document.getElementById('quiz-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
   }
 
   async function submitQuiz() {
-      saveCurrentAnswer(); // save the last question
+      saveCurrentAnswer();
       clearInterval(quizInterval);
 
       let score = 0;
-      currentQuizQuestions.forEach(q => {
-          if (studentAnswers[q.id] === q.correctOpt) score++;
-      });
+      currentQuizQuestions.forEach(q => { if (studentAnswers[q.id] === q.correctOpt) score++; });
 
       await fetch('/api/quizzes/submit-attempt', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -366,6 +435,7 @@
   function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
 
   // Init
+  loadDashboardWidgets();
   fetchQuestions();
   checkBroadcast();
 

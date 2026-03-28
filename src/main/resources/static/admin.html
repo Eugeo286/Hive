@@ -6,9 +6,9 @@
     <title>The Hive | Admin Command</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="shared.css">
-    <style>
-        .role-select { background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: var(--gold); padding: 5px; border-radius: 5px; cursor: pointer; }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <style>
+    .role-select { background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: var(--gold); padding: 5px; border-radius: 5px; cursor: pointer; }
+</style>
 </head>
 <body>
 
@@ -41,6 +41,10 @@
 <div class="main">
     <div class="header">
         <div><h1>Command Center</h1><p>System Status: <span style="color: #4CAF50; font-weight: bold;">ONLINE</span></p></div>
+        <div class="header-profile">
+            <span class="badge" style="background: #4CAF50;">System Admin</span>
+            <img id="user-avatar" src="" class="avatar" alt="Admin Avatar" style="border-color: #4CAF50;">
+        </div>
     </div>
 
     <div id="view-system" class="view-section active">
@@ -54,11 +58,25 @@
                 <div class="stat-val" id="stat-questions" style="color: var(--gold);">0</div>
             </div>
         </div>
-        <div class="panel" style="margin-top: 30px;">
-            <h2>System Performance</h2>
-            <p style="color: var(--text-2);">All services are currently <span style="color: #4CAF50;">Operational</span>.</p>
-            <div style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 4px solid var(--gold);">
-                <strong>Database:</strong> Connected & Secured
+
+        <div class="content-grid">
+            <div class="panel">
+                <h2>System Load & Traffic</h2>
+                <div class="chart-container">
+                    <canvas id="adminChart"></canvas>
+                </div>
+            </div>
+            <div class="panel">
+                <h2>Server Diagnostics</h2>
+                <div style="margin-top: 10px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 4px solid #4CAF50;">
+                    <strong>Database:</strong> Connected & Secured
+                </div>
+                <div style="margin-top: 10px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 4px solid #4CAF50;">
+                    <strong>Email Service:</strong> SMTP Active
+                </div>
+                <div style="margin-top: 10px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 4px solid #4CAF50;">
+                    <strong>File Storage:</strong> Writable
+                </div>
             </div>
         </div>
     </div>
@@ -130,6 +148,9 @@
     const user = JSON.parse(localStorage.getItem('hive_user'));
     if (!user || user.role !== 'admin') window.location.href = "index.html";
 
+    // Set Admin avatar
+    document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/shapes/svg?seed=Admin`;
+
     function switchTab(tabId, element) {
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         if(element) element.classList.add('active');
@@ -170,10 +191,22 @@
                     <button class="btn-action delete" style="padding: 5px 10px; font-size: 12px;" onclick="deleteQuestion(${q.id})">Wipe</button>
                 </div>
             `).join('');
+
+            // Render System Traffic Chart
+            const ctx = document.getElementById('adminChart').getContext('2d');
+            if (!window.adminChartInstance) {
+                window.adminChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{ label: 'Traffic / Active Connections', data: [12, 19, 15, 25, 22, 30, 28], backgroundColor: '#4CAF50', borderRadius: 4 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } } }
+                });
+            }
         } catch(e) { console.error(e); }
     }
 
-    // --- NEW: FETCH QUIZ RESULTS ---
     async function loadQuizResults() {
         try {
             const res = await fetch('/api/admin/quiz-results');
@@ -192,32 +225,21 @@
     }
 
     async function changeRole(userId, newRole) {
-        if(confirm(`Update role to ${newRole.toUpperCase()}?`)) {
-            await fetch(`/api/admin/users/${userId}/role`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: newRole }) });
-            alert("Role updated."); loadAdminData();
-        } else { loadAdminData(); }
+        if(confirm(`Update role to ${newRole.toUpperCase()}?`)) { await fetch(`/api/admin/users/${userId}/role`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: newRole }) }); alert("Role updated."); loadAdminData(); } else { loadAdminData(); }
     }
-
-    async function deleteUser(id) {
-        if(confirm("Permanently purge user?")) { await fetch(`/api/admin/users/${id}`, { method: 'DELETE' }); loadAdminData(); }
-    }
-
-    async function deleteQuestion(id) {
-        if(confirm("Wipe this post from the server?")) { await fetch(`/api/admin/questions/${id}`, { method: 'DELETE' }); loadAdminData(); }
-    }
+    async function deleteUser(id) { if(confirm("Permanently purge user?")) { await fetch(`/api/admin/users/${id}`, { method: 'DELETE' }); loadAdminData(); } }
+    async function deleteQuestion(id) { if(confirm("Wipe this post from the server?")) { await fetch(`/api/admin/questions/${id}`, { method: 'DELETE' }); loadAdminData(); } }
 
     async function sendBroadcast() {
-        const msg = document.getElementById('b-msg').value;
-        if(!msg) return alert("Please enter a message.");
-        await fetch('/api/admin/broadcast', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg, postedBy: "SYSTEM ADMIN" }) });
-        alert("Broadcast live!"); document.getElementById('b-msg').value = '';
+        const msg = document.getElementById('b-msg').value; if(!msg) return alert("Please enter a message.");
+        await fetch('/api/admin/broadcast', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg, postedBy: "SYSTEM ADMIN" }) }); alert("Broadcast live!"); document.getElementById('b-msg').value = '';
     }
 
-    async function clearBroadcast() {
-        if(confirm("Stop the current banner?")) { await fetch('/api/admin/broadcast/clear', { method: 'DELETE' }); alert("Broadcasts cleared."); }
-    }
+    async function clearBroadcast() { if(confirm("Stop the current banner?")) { await fetch('/api/admin/broadcast/clear', { method: 'DELETE' }); alert("Broadcasts cleared."); } }
 
     function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
+
+    // Init
     loadAdminData();
 
     // Themes
