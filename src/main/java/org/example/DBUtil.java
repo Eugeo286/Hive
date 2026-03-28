@@ -5,30 +5,22 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DBUtil {
-    // Railway Credentials (Internal)
-    private static final String CLOUD_URL  = "jdbc:mysql://mysql.railway.internal:3306/railway";
-    private static final String CLOUD_USER = "root";
-    private static final String CLOUD_PASS = "yLUlkXKDNpPRgvDkEGVOzqdQOpQcSqQQ";
-
-    // Your Local XAMPP Credentials (Fallback)
-    private static final String LOCAL_URL  = "jdbc:mysql://localhost:3306/hive";
-    private static final String LOCAL_USER = "root";
-    private static final String LOCAL_PASS = "";
-
     private DBUtil() {}
 
     public static Connection getConnection() throws SQLException {
-        // This check looks to see if the code is running on Railway
-        if (System.getenv("RAILWAY_ENVIRONMENT") != null || System.getenv("MYSQLHOST") != null) {
-            try {
-                return DriverManager.getConnection(CLOUD_URL, CLOUD_USER, CLOUD_PASS);
-            } catch (SQLException e) {
-                // If the internal cloud link fails, we try the public one or log the error
-                System.err.println("Cloud connection failed: " + e.getMessage());
-            }
+        // 1. Try to get the automated Railway connection string
+        String railwayUrl = System.getenv("MYSQL_URL");
+
+        if (railwayUrl != null) {
+            // Railway gives us "mysql://...", but JDBC needs "jdbc:mysql://..."
+            String jdbcUrl = railwayUrl.replace("mysql://", "jdbc:mysql://");
+            return DriverManager.getConnection(jdbcUrl);
         }
 
-        // If not on Railway, or if cloud connection failed, use local settings
-        return DriverManager.getConnection(LOCAL_URL, LOCAL_USER, LOCAL_PASS);
+        // 2. Fallback for your local laptop (XAMPP)
+        String localUrl = "jdbc:mysql://localhost:3306/hive";
+        String localUser = "root";
+        String localPass = "";
+        return DriverManager.getConnection(localUrl, localUser, localPass);
     }
 }
