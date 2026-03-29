@@ -223,4 +223,76 @@ public class HiveController {
         if (f.endsWith(".mp4")) return "video";
         return "file";
     }
+
+    // ══════════════════════════════════════════════════════
+    // COURSE ENDPOINTS
+    // ══════════════════════════════════════════════════════
+
+    @GetMapping("/courses")
+    public List<Course> getAllCourses() {
+        return contentDAO.getAllCourses();
+    }
+
+    @GetMapping("/users/{userId}/courses")
+    public List<Course> getUserCourses(@PathVariable int userId) {
+        return contentDAO.getCoursesForUser(userId);
+    }
+
+    @PostMapping("/courses/{courseId}/enroll")
+    public ResponseEntity<String> enrollInCourse(@PathVariable int courseId, @RequestBody Map<String, Object> payload) {
+        int userId = Integer.parseInt(payload.get("userId").toString());
+        String role = payload.get("role").toString();
+        contentDAO.enrollUserInCourse(userId, courseId, role);
+        return ResponseEntity.ok("Enrolled successfully!");
+    }
+
+    @PostMapping("/admin/courses")
+    public ResponseEntity<String> createCourse(@RequestBody Course course) {
+        contentDAO.createCourse(course);
+        return ResponseEntity.ok("Course officially registered in The Hive.");
+    }
+
+    // ══════════════════════════════════════════════════════
+    // CHAT ENDPOINTS
+    // ══════════════════════════════════════════════════════
+
+    @GetMapping("/chat/course/{courseId}")
+    public List<Message> getCourseChat(@PathVariable int courseId) {
+        return contentDAO.getMessagesForCourse(courseId);
+    }
+
+    @PostMapping("/chat/send")
+    public ResponseEntity<String> sendChatMessage(@RequestBody Map<String, Object> payload) {
+        int senderId = Integer.parseInt(payload.get("senderId").toString());
+        int courseId = Integer.parseInt(payload.get("courseId").toString());
+        String content = payload.get("content").toString();
+
+        Message msg = new Message(senderId, courseId, content);
+        contentDAO.saveChatMessage(msg);
+        return ResponseEntity.ok("Message sent");
+    }
+
+    // ══════════════════════════════════════════════════════
+    // AI Q&A ENDPOINTS
+    // ══════════════════════════════════════════════════════
+
+    @PostMapping("/questions/{id}/ask-ai")
+    public ResponseEntity<Map<String, String>> requestAiAnswer(@PathVariable int id, @RequestBody Map<String, String> payload) {
+        String questionText = payload.get("questionText");
+
+        // --- AI GENERATION LOGIC ---
+        // In a production app, you would make an HTTP call to the OpenAI or Gemini API here.
+        // For now, we will generate a simulated context-aware response so you can build the UI.
+
+        String simulatedAiResponse = "Based on my knowledge base, regarding your question about '"
+                + questionText
+                + "': This is a common topic in this course. Ensure you check the course syllabus and review the core fundamentals. If you need a more specific code or math breakdown, please reply!";
+
+        // Save it to the database so it persists
+        contentDAO.saveAiAnswer(id, simulatedAiResponse);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("aiAnswer", simulatedAiResponse);
+        return ResponseEntity.ok(response);
+    }
 }

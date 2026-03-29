@@ -1,29 +1,45 @@
 package org.example;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public abstract class User {
-    protected int    id;
+    protected int id;
     protected String name;
     protected String email;
-    protected int    points;
-    protected String role; // <-- ADD THIS
+    protected int points;
+    protected String role;
+    protected List<Course> enrolledCourses = new ArrayList<>();
 
-    public User() {}
     public User(String name, String email) {
-        this.name   = name;
-        this.email  = email;
+        this.name = name;
+        this.email = email;
         this.points = 0;
     }
 
-    public int    getId()           { return id; }
-    public String getName()         { return name; }
-    public String getEmail()        { return email; }
-    public int    getPoints()       { return points; }
-    public String getRole()         { return role; } // <-- ADD THIS
+    // 🟢 FIX FOR getName()
+    public String getName() {
+        return name;
+    }
 
-    public void   setId(int id)     { this.id = id; }
-    public void   setName(String n) { this.name = n; }
-    public void   setEmail(String e){ this.email = e; }
-    public void   setPoints(int p)  { this.points = p; }
-    public void   setRole(String r) { this.role = r; } // <-- ADD THIS
-    public void   addPoints(int p)  { this.points += p; }
+    // 🟢 FIX FOR addPoints()
+    public void addPoints(int p) {
+        this.points += p;
+    }
+
+    // Standard Getters/Setters for other fields
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public int getPoints() { return points; }
+    public void setPoints(int points) { this.points = points; }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
+    public List<Course> getEnrolledCourses() { return enrolledCourses; }
+    public void setEnrolledCourses(List<Course> enrolledCourses) { this.enrolledCourses = enrolledCourses; }
 }

@@ -5,10 +5,14 @@ import java.util.ArrayList;
 public class Student extends User {
     private ArrayList<String> strongSubjects = new ArrayList<>();
 
-    public Student() {}
     public Student(String name, String email) {
         super(name, email);
-        this.role = "student"; // <-- ADD THIS
+        this.role = "student";
+    }
+
+    public Student() {
+        super("Unknown", "No Email");
+        this.role = "student";
     }
 
     public void addStrongSubject(String s) { strongSubjects.add(s); }

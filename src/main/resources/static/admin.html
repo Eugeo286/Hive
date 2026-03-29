@@ -91,6 +91,18 @@
     </div>
 
     <div id="view-system" class="view-section active">
+
+        <div class="panel" style="border: 1px solid #4CAF50; margin-bottom: 20px; background: rgba(76, 175, 80, 0.05);">
+            <h2 style="color: #4CAF50;"><i class="fa-solid fa-folder-tree"></i> Course Architect</h2>
+            <p style="font-size: 13px; color: var(--text-2); margin-bottom: 15px;">Create new courses for students and teachers to enroll in.</p>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="new-course-code" placeholder="Course Code (e.g., CS101)" style="flex: 1;">
+                <input type="text" id="new-course-title" placeholder="Full Course Title" style="flex: 2;">
+            </div>
+            <textarea id="new-course-desc" rows="2" placeholder="Course Description..."></textarea>
+            <button class="btn-gold" style="width: 100%; background: linear-gradient(135deg, #4CAF50, #1b5e20);" onclick="createNewCourse()">Deploy Course to Network</button>
+        </div>
+
         <div class="stats-row">
             <div class="stat-card">
                 <div class="stat-title">Registered Users</div>
@@ -202,6 +214,31 @@
         if(tabId === 'system' || tabId === 'users' || tabId === 'mod') loadAdminData();
         if(tabId === 'progress') loadQuizResults();
         if(tabId === 'resources') fetchAdminResources(); // New trigger added
+    }
+
+    // PHASE 4: CREATE COURSE LOGIC FOR ADMIN
+    async function createNewCourse() {
+        const code = document.getElementById('new-course-code').value;
+        const title = document.getElementById('new-course-title').value;
+        const desc = document.getElementById('new-course-desc').value;
+
+        if(!code || !title) return alert("Course Code and Title are required.");
+
+        try {
+            const res = await fetch('/api/hive/admin/courses', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ courseCode: code, title: title, description: desc })
+            });
+
+            if(res.ok) {
+                alert("Course successfully deployed to the network!");
+                document.getElementById('new-course-code').value = '';
+                document.getElementById('new-course-title').value = '';
+                document.getElementById('new-course-desc').value = '';
+            } else {
+                alert("Failed to deploy course.");
+            }
+        } catch (e) { alert("Server error."); }
     }
 
     async function loadAdminData() {

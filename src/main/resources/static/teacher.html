@@ -18,10 +18,7 @@
        OPTION 3: FUTURISTIC LEARNING (DEFAULT DARK MODE) - BRIGHTER
        ================================================================= */
     body {
-        /* Slightly brighter deep blue base instead of near-black */
         background-color: #081229 !important;
-
-        /* Increased opacity for much brighter glowing corners and grid */
         background-image:
             radial-gradient(circle at 15% 50%, rgba(0, 242, 254, 0.35), transparent 40%),
             radial-gradient(circle at 85% 30%, rgba(255, 0, 222, 0.35), transparent 40%),
@@ -34,20 +31,15 @@
 
     /* =================================================================
        OPTION 1: MODERN GRADIENT (LIGHT MODE) - BRIGHTER
-       Activates when the body has class="light-mode"
        ================================================================= */
     body.light-mode {
-        /* Pure white base to make colors pop */
         background-color: #ffffff !important;
-
-        /* Increased opacity and spread for much more vibrant colors */
         background-image:
             radial-gradient(circle at 0% 0%, rgba(79, 172, 254, 0.5) 0%, transparent 70%),
             radial-gradient(circle at 100% 0%, rgba(0, 242, 254, 0.45) 0%, transparent 60%),
             radial-gradient(circle at 100% 100%, rgba(255, 0, 222, 0.35) 0%, transparent 70%) !important;
         background-size: 100% 100% !important;
     }
-
   </style>
 </head>
 <body class="light-mode">
@@ -94,7 +86,17 @@
     <div>
       <h1 id="welcome-text">Faculty Dashboard</h1>
     </div>
-    <div class="header-profile">
+
+    <div class="header-profile header-actions">
+      <select id="active-course-selector" class="course-selector" onchange="changeActiveCourse()">
+        <option value="">Loading courses...</option>
+      </select>
+
+      <div class="notif-wrapper" onclick="alert('Notification Center coming soon!')">
+        <i class="fa-solid fa-bell"></i>
+        <span class="notif-badge">3</span>
+      </div>
+
       <span class="badge">Professor</span>
       <img id="user-avatar" src="" class="avatar" alt="Faculty Avatar" style="border-color: var(--primary);">
       <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
@@ -295,6 +297,7 @@
   } catch(e) {}
   }
 
+  // PHASE 4: THE MASTER Q&A RENDER LOGIC (NOW WITH AI)
   async function fetchQuestions() {
       try {
           const res = await fetch('/api/hive/questions');
@@ -333,6 +336,15 @@
                           Waiting for a professor or peer to answer this question...
                       </div>
                   `}
+
+                  ${q.aiAnswer ? `
+                      <div class="ai-glass-box" style="margin-top: 10px;">
+                          <p style="font-size: 11px; color: #EC4899; font-weight: bold; margin-bottom: 5px; text-transform: uppercase;">
+                              <i class="fa-solid fa-bolt"></i> Hivemind AI Analysis:
+                          </p>
+                          <p style="font-size: 13px; line-height: 1.5; color: var(--text);">${q.aiAnswer}</p>
+                      </div>
+                  ` : ''}
               </div>
           `).join('') || "No questions have been asked yet.";
       } catch (e) {
@@ -342,13 +354,9 @@
 
   // 🔴 THE NEW EDIT LOGIC
   async function editAnswer(questionId) {
-      // 1. Ask the teacher for the new answer
       const newAnswer = prompt("Type the corrected answer below:");
-
-      // 2. If they typed something and didn't hit 'Cancel'
       if (newAnswer !== null && newAnswer.trim() !== "") {
           try {
-              // 3. Send the updated answer to the Java backend to overwrite the old one
               const res = await fetch(`/api/hive/questions/${questionId}/answers`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -356,7 +364,6 @@
               });
 
               if(res.ok) {
-                  // 4. Instantly refresh the screen to show the new answer
                   fetchQuestions();
               } else {
                   alert("Failed to update the answer on the server.");
@@ -507,7 +514,34 @@
 
   function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
 
-  loadDashboard(); checkBroadcast();
+  // ══════════════════════════════════════════════════════
+  // PHASE 4 LOGIC: COURSES ONLY (CHAT REMOVED)
+  // ══════════════════════════════════════════════════════
+  let activeCourseId = null;
+
+  async function loadUserCourses() {
+      try {
+          const res = await fetch(`/api/hive/users/${user.id}/courses`);
+          const courses = await res.json();
+
+          const selector = document.getElementById('active-course-selector');
+          if (courses.length === 0) {
+              selector.innerHTML = '<option value="">No Courses Enrolled</option>';
+          } else {
+              selector.innerHTML = courses.map(c => `<option value="${c.id}">${c.title} (${c.courseCode})</option>`).join('');
+              activeCourseId = courses[0].id;
+          }
+      } catch (e) { console.error("Failed to load courses"); }
+  }
+
+  function changeActiveCourse() {
+      const selector = document.getElementById('active-course-selector');
+      activeCourseId = selector.value;
+  }
+
+  // Init
+  loadDashboard(); checkBroadcast(); loadUserCourses();
+
   function setTheme(themeName) { document.body.classList.remove('light-mode', 'midnight-mode', 'cyber-mode', 'aurora-mode'); if (themeName !== 'hive') { document.body.classList.add(themeName + '-mode'); } localStorage.setItem('hive_theme', themeName); }
   function initTheme() { const savedTheme = localStorage.getItem('hive_theme'); if (savedTheme) setTheme(savedTheme); }
   initTheme();

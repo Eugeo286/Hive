@@ -42,7 +42,8 @@
         background-size: 100% 100% !important;
     }
 
-  </style></head>
+  </style>
+</head>
 <body class="light-mode">
 
 <div class="hive-watermark">HIVE</div>
@@ -89,7 +90,20 @@
       <h1 id="welcome-text">Welcome back</h1>
       <p>Ready to earn some skill points today?</p>
     </div>
-    <div class="header-profile">
+
+    <div class="header-profile header-actions">
+      <select id="active-course-selector" class="course-selector" onchange="changeActiveCourse()">
+        <option value="">Loading courses...</option>
+      </select>
+
+      <div class="notif-wrapper" onclick="alert('Notification Center coming soon!')">
+        <i class="fa-solid fa-bell"></i>
+        <span class="notif-badge">3</span>
+      </div>
+      <button class="btn-action" style="border-color: var(--gold); color: var(--gold);" onclick="toggleChat()">
+        <i class="fa-regular fa-comments"></i> Chat
+      </button>
+
       <img id="user-avatar" src="" class="avatar" alt="User Avatar">
       <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
     </div>
@@ -192,6 +206,24 @@
   </div>
 </div>
 
+<div id="chat-sidebar" class="chat-sidebar">
+  <div class="chat-header">
+    <div>
+      <h2 style="font-size: 18px; margin:0;"><i class="fa-solid fa-comments"></i> Course Chat</h2>
+      <span style="font-size:12px; color:var(--text-2);" id="chat-course-name">Select a course first</span>
+    </div>
+    <button class="btn-action" style="border-radius: 50%; width: 35px; height: 35px; padding: 0;" onclick="toggleChat()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+
+  <div id="chat-messages" class="chat-messages">
+  </div>
+
+  <div style="display: flex; gap: 10px; margin-top: 15px;">
+    <input type="text" id="chat-input" placeholder="Type a message..." style="margin:0; width:100%;" onkeypress="if(event.key === 'Enter') sendChatMessage()">
+    <button class="btn-gold" style="padding: 12px 15px;" onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+  </div>
+</div>
+
 <script>
   const user = JSON.parse(localStorage.getItem('hive_user'));
   if (!user || user.role !== 'student') window.location.href = "index.html";
@@ -217,7 +249,7 @@
       if(tabId === 'quizzes') fetchQuizzes();
   }
 
-  // --- NEW DASHBOARD LIVELINESS LOGIC ---
+  // --- DASHBOARD LIVELINESS LOGIC ---
   async function loadDashboardWidgets() {
       // 1. Chart.js Implementation
       const ctx = document.getElementById('studentChart').getContext('2d');
@@ -273,9 +305,6 @@
       } catch(e) {}
   }
 
-  // ══════════════════════════════════════════════════════
-  // POST A NEW QUESTION LOGIC
-  // ══════════════════════════════════════════════════════
   async function postQuestion() {
       const title = document.getElementById('q-title').value;
       const subject = document.getElementById('q-subject').value;
@@ -299,7 +328,7 @@
           if(res.ok) {
               document.getElementById('q-title').value = '';
               document.getElementById('q-subject').value = '';
-              fetchQuestions(); // Instantly refresh the board!
+              fetchQuestions();
           } else {
               alert("Server error posting question.");
           }
@@ -308,9 +337,6 @@
       }
   }
 
-  // ══════════════════════════════════════════════════════
-  // ANSWER A QUESTION LOGIC
-  // ══════════════════════════════════════════════════════
   async function answerPrompt(id) {
       const text = prompt("Enter your answer to help your peer:");
       if(text) {
@@ -325,19 +351,16 @@
           document.getElementById('user-points').innerText = user.points;
           document.getElementById('user-badge').innerText = user.points >= 100 ? 'Scholar 🏆' : (user.points >= 50 ? 'Apprentice 🥈' : 'Novice 🥉');
 
-          fetchQuestions(); // Instantly refresh
+          fetchQuestions();
       }
   }
 
-  // ══════════════════════════════════════════════════════
-  // THE MASTER Q&A RENDER LOGIC (FIXED)
-  // ══════════════════════════════════════════════════════
+  // PHASE 4: THE MASTER Q&A RENDER LOGIC (NOW WITH AI)
   async function fetchQuestions() {
       try {
           const res = await fetch('/api/hive/questions');
           const questions = await res.json();
 
-          // Targets 'questions-container' accurately!
           document.getElementById('questions-container').innerHTML = questions.map(q => `
               <div class="item-card" style="flex-direction: column; align-items: stretch; margin-bottom: 10px;">
                   <div style="display:flex; justify-content: space-between; align-items: flex-start;">
@@ -369,9 +392,25 @@
                   ` : `
                       <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
                           <span style="font-size: 12px; color: var(--text-2); font-style: italic;">Waiting for an answer...</span>
-                          ${user.role === 'student' ? `<button class="btn-action" style="padding: 5px 15px; font-size: 12px; border-color: var(--gold); color: var(--gold);" onclick="answerPrompt(${q.id})">Provide Answer (+10pts)</button>` : ''}
+                          <div style="display: flex; gap: 10px;">
+                              ${user.role === 'student' ? `<button class="btn-action" style="padding: 5px 15px; font-size: 12px; border-color: var(--gold); color: var(--gold);" onclick="answerPrompt(${q.id})">Provide Answer (+10pts)</button>` : ''}
+                              ${user.role === 'student' && !q.aiAnswer ? `
+                                  <button id="btn-ai-${q.id}" class="btn-action" style="padding: 5px 15px; font-size: 12px; border-color: #EC4899; color: #EC4899;" onclick="askAI(${q.id}, '${q.title.replace(/'/g, "\\'")}')">
+                                      <i class="fa-solid fa-robot"></i> Ask AI
+                                  </button>
+                              ` : ''}
+                          </div>
                       </div>
                   `}
+
+                  ${q.aiAnswer ? `
+                      <div class="ai-glass-box">
+                          <p style="font-size: 11px; color: #EC4899; font-weight: bold; margin-bottom: 5px; text-transform: uppercase;">
+                              <i class="fa-solid fa-bolt"></i> Hivemind AI Analysis:
+                          </p>
+                          <p style="font-size: 13px; line-height: 1.5; color: var(--text);">${q.aiAnswer}</p>
+                      </div>
+                  ` : ''}
               </div>
           `).join('') || "<div style='padding: 15px; color: var(--text-2); font-style: italic;'>No questions have been asked yet. Be the first!</div>";
       } catch (e) {
@@ -395,6 +434,98 @@
           } catch(e) { alert("Network error while trying to update answer."); }
       }
   }
+
+  // ══════════════════════════════════════════════════════
+  // PHASE 4 LOGIC: COURSES, CHAT & AI
+  // ══════════════════════════════════════════════════════
+  let activeCourseId = null;
+  let chatPollInterval = null;
+
+  async function loadUserCourses() {
+      try {
+          const res = await fetch(`/api/hive/users/${user.id}/courses`);
+          const courses = await res.json();
+
+          const selector = document.getElementById('active-course-selector');
+          if (courses.length === 0) {
+              selector.innerHTML = '<option value="">No Courses Enrolled</option>';
+          } else {
+              selector.innerHTML = courses.map(c => `<option value="${c.id}">${c.title} (${c.courseCode})</option>`).join('');
+              activeCourseId = courses[0].id;
+              document.getElementById('chat-course-name').innerText = courses[0].title;
+          }
+      } catch (e) { console.error("Failed to load courses"); }
+  }
+
+  function changeActiveCourse() {
+      const selector = document.getElementById('active-course-selector');
+      activeCourseId = selector.value;
+      document.getElementById('chat-course-name').innerText = selector.options[selector.selectedIndex].text;
+      if(document.getElementById('chat-sidebar').classList.contains('open')) loadChatMessages();
+  }
+
+  function toggleChat() {
+      const sidebar = document.getElementById('chat-sidebar');
+      sidebar.classList.toggle('open');
+
+      if (sidebar.classList.contains('open') && activeCourseId) {
+          loadChatMessages();
+          chatPollInterval = setInterval(loadChatMessages, 3000);
+      } else {
+          clearInterval(chatPollInterval);
+      }
+  }
+
+  async function loadChatMessages() {
+      if (!activeCourseId) return;
+      try {
+          const res = await fetch(`/api/hive/chat/course/${activeCourseId}`);
+          const messages = await res.json();
+
+          const chatBox = document.getElementById('chat-messages');
+          chatBox.innerHTML = messages.map(m => `
+              <div class="chat-bubble ${m.senderId === user.id ? 'me' : 'them'}">
+                  ${m.senderId !== user.id ? `<div class="chat-sender">${m.senderName}</div>` : ''}
+                  ${m.content}
+              </div>
+          `).join('') || "<div style='text-align:center; color:gray; font-size:12px; margin-top:20px;'>Be the first to say hello!</div>";
+
+          chatBox.scrollTop = chatBox.scrollHeight;
+      } catch (e) { console.error("Chat sync failed"); }
+  }
+
+  async function sendChatMessage() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text || !activeCourseId) return;
+
+      await fetch('/api/hive/chat/send', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ senderId: user.id, courseId: activeCourseId, content: text })
+      });
+
+      input.value = '';
+      loadChatMessages();
+  }
+
+  async function askAI(questionId, questionText) {
+      const btn = document.getElementById(`btn-ai-${questionId}`);
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Analyzing...`;
+      btn.disabled = true;
+
+      try {
+          await fetch(`/api/hive/questions/${questionId}/ask-ai`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ questionText: questionText })
+          });
+          fetchQuestions();
+      } catch (e) {
+          alert("AI core offline.");
+          btn.innerHTML = `<i class="fa-solid fa-robot"></i> Ask AI`;
+          btn.disabled = false;
+      }
+  }
+
 
   async function fetchResources() {
       const course = document.getElementById('r-search').value;
@@ -578,20 +709,16 @@
 
   // Init
   loadDashboardWidgets();
+  loadUserCourses(); // Loads course context on startup
   fetchQuestions();
   checkBroadcast();
 
-// Themes
+  // Themes
   function setTheme(themeName) {
-      // 1. Remove ALL possible theme classes
       document.body.classList.remove('light-mode', 'midnight-mode', 'cyber-mode', 'aurora-mode');
-
-      // 2. Add the selected theme (unless it is the default 'hive' theme)
       if (themeName !== 'hive') {
           document.body.classList.add(themeName + '-mode');
       }
-
-      // 3. Save preference
       localStorage.setItem('hive_theme', themeName);
   }
 </script>

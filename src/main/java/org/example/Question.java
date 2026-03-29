@@ -41,4 +41,14 @@ public class Question {
     // 🔴 ADDED: Getters and Setters for the answer text
     public String        getAnswerText()                  { return answerText; }
     public void          setAnswerText(String text)       { this.answerText = text; }
+
+    // Add these variables to Question.java
+    private int courseId;
+    private String aiAnswer;
+
+    // Add these at the bottom of the file
+    public int getCourseId() { return courseId; }
+    public void setCourseId(int courseId) { this.courseId = courseId; }
+    public String getAiAnswer() { return aiAnswer; }
+    public void setAiAnswer(String aiAnswer) { this.aiAnswer = aiAnswer; }
 }

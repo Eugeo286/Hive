@@ -3,11 +3,15 @@ package org.example;
 public class Teacher extends User {
     private String department;
 
-    public Teacher() {}
+    public Teacher() {
+        super("Unknown", "No Email");
+        this.role = "teacher";
+    }
+
     public Teacher(String name, String email, String department) {
         super(name, email);
         this.department = department;
-        this.role = "teacher"; // <-- ADD THIS
+        this.role = "teacher";
     }
 
     public String getDepartment()              { return department; }

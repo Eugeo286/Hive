@@ -520,4 +520,104 @@ public class ContentDAO {
             System.out.println("Error during scheduled cleanup: " + e.getMessage());
         }
     }
+
+    // ══════════════════════════════════════════════════════
+    // 1. COURSE ENROLLMENT ENGINE
+    // ══════════════════════════════════════════════════════
+
+    public List<Course> getAllCourses() {
+        List<Course> list = new ArrayList<>();
+        String sql = "SELECT * FROM courses ORDER BY title ASC";
+        try (Connection c = DBUtil.getConnection(); Statement s = c.createStatement(); ResultSet rs = s.executeQuery(sql)) {
+            while (rs.next()) {
+                Course course = new Course(rs.getString("course_code"), rs.getString("title"), rs.getString("description"));
+                course.setId(rs.getInt("id"));
+                list.add(course);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
+    public List<Course> getCoursesForUser(int userId) {
+        List<Course> list = new ArrayList<>();
+        // JOIN to get only the courses this specific user is enrolled in
+        String sql = "SELECT c.* FROM courses c JOIN enrollments e ON c.id = e.course_id WHERE e.user_id = ?";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, userId);
+            ResultSet rs = s.executeQuery();
+            while (rs.next()) {
+                Course course = new Course(rs.getString("course_code"), rs.getString("title"), rs.getString("description"));
+                course.setId(rs.getInt("id"));
+                list.add(course);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
+    public void enrollUserInCourse(int userId, int courseId, String role) {
+        // INSERT IGNORE prevents crashing if the user clicks "Enroll" twice
+        String sql = "INSERT IGNORE INTO enrollments (user_id, course_id, role) VALUES (?, ?, ?)";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, userId);
+            s.setInt(2, courseId);
+            s.setString(3, role);
+            s.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public void createCourse(Course c) {
+        String sql = "INSERT INTO courses (course_code, title, description) VALUES (?, ?, ?)";
+        try (Connection conn = DBUtil.getConnection(); PreparedStatement s = conn.prepareStatement(sql)) {
+            s.setString(1, c.getCourseCode());
+            s.setString(2, c.getTitle());
+            s.setString(3, c.getDescription());
+            s.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 2. PEER-TO-PEER CHAT ENGINE
+    // ══════════════════════════════════════════════════════
+
+    public void saveChatMessage(Message msg) {
+        String sql = "INSERT INTO messages (sender_id, course_id, content) VALUES (?, ?, ?)";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, msg.getSenderId());
+            s.setInt(2, msg.getCourseId());
+            s.setString(3, msg.getContent());
+            s.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public List<Message> getMessagesForCourse(int courseId) {
+        List<Message> list = new ArrayList<>();
+        // JOIN with users table so we can show the sender's actual name in the chat UI
+        String sql = "SELECT m.*, u.name AS sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.course_id = ? ORDER BY m.sent_at ASC";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, courseId);
+            ResultSet rs = s.executeQuery();
+            while (rs.next()) {
+                Message msg = new Message(rs.getInt("sender_id"), rs.getInt("course_id"), rs.getString("content"));
+                msg.setId(rs.getInt("id"));
+                msg.setSenderName(rs.getString("sender_name"));
+                Timestamp ts = rs.getTimestamp("sent_at");
+                if (ts != null) msg.setSentAt(ts.toLocalDateTime());
+                list.add(msg);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 3. AI Q&A ENGINE
+    // ══════════════════════════════════════════════════════
+
+    public void saveAiAnswer(int questionId, String aiAnswerText) {
+        String sql = "UPDATE questions SET ai_answer = ? WHERE id = ?";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setString(1, aiAnswerText);
+            s.setInt(2, questionId);
+            s.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
 }
