@@ -8,26 +8,44 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="thehive-modern.css">
+
     <style>
-        /* Standalone overrides for the centralized login aesthetic */
+        /* =================================================================
+           THE HIVE: PREMIUM GLASSMORPHISM LOGIN
+           ================================================================= */
         body {
             display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(circle at center, #2C1A00 0%, #0A0600 100%);
-            overflow: hidden;
+            background: radial-gradient(circle at 50% 40%, #1a1005 0%, #050301 100%) !important;
+            background-attachment: fixed !important;
+            margin: 0; min-height: 100vh; position: relative; z-index: 1; overflow: hidden;
         }
 
+        /* Ambient Golden Glow Behind the Card */
+        body::before {
+            content: ""; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); width: 900px; height: 900px;
+            background: radial-gradient(circle, rgba(255, 170, 0, 0.12) 0%, transparent 65%);
+            z-index: -1; pointer-events: none;
+        }
+
+        /* The Core Glass Card */
         .auth-card {
-            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(212, 136, 10, 0.2);
+            background: rgba(20, 10, 5, 0.35) !important; /* Highly transparent */
+            backdrop-filter: blur(24px) !important; /* Deep frosted glass */
+            -webkit-backdrop-filter: blur(24px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important; /* Shiny top edge */
             border-radius: 24px; width: 100%; max-width: 420px; padding: 40px;
-            backdrop-filter: blur(20px); box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
             position: relative; z-index: 10;
         }
 
+        /* Typography & Logos */
         .logo-container { text-align: center; margin-bottom: 30px; }
         .logo-container .sb-hex { margin: 0 auto 15px auto; width: 60px; height: 60px; font-size: 28px; }
         .logo-container h1 { color: #FDF8EE; font-size: 32px; margin: 0; }
         .logo-container p { color: rgba(253, 248, 238, 0.6); font-size: 14px; margin-top: 5px; }
 
+        /* Tabs */
         .auth-tabs { display: flex; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 5px; margin-bottom: 30px; }
         .auth-tab {
             flex: 1; text-align: center; padding: 10px; color: rgba(253, 248, 238, 0.5);
@@ -39,121 +57,42 @@
         .auth-panel.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Input styling specifically for dark theme login */
-        .auth-panel input, .auth-panel select {
-            background: rgba(0,0,0,0.2); color: #FDF8EE; border: 1px solid rgba(255,255,255,0.1);
-        }
-        .auth-panel input::placeholder { color: rgba(255,255,255,0.3); }
-        .auth-panel input:focus, .auth-panel select:focus { border-color: var(--gold); background: rgba(0,0,0,0.4); }
-        .auth-panel label { display: block; color: rgba(253, 248, 238, 0.8); font-size: 12px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; }
+        /* Frosted Inputs */
         .input-group { margin-bottom: 20px; }
+        .auth-panel label { display: block; color: rgba(253, 248, 238, 0.8); font-size: 12px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; }
+
+        input[type="email"], input[type="password"], input[type="text"], select {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important; border-radius: 8px !important; padding: 12px !important;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease; width: 100%; box-sizing: border-box;
+        }
+        input::placeholder { color: rgba(255,255,255,0.3) !important; }
+        input:focus, select:focus {
+            border-color: rgba(255, 170, 0, 0.8) !important;
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.25) !important; outline: none; background: rgba(0,0,0,0.2) !important;
+        }
+
+        /* Premium Golden Buttons */
+        button {
+            background: linear-gradient(135deg, #e69c00 0%, #b37400 100%) !important;
+            color: #ffffff !important; border: 1px solid rgba(255, 215, 0, 0.4) !important;
+            border-radius: 8px !important; padding: 12px 24px !important; font-weight: bold !important;
+            letter-spacing: 1px !important; box-shadow: 0 5px 15px rgba(230, 156, 0, 0.3) !important;
+            transition: all 0.3s ease !important; cursor: pointer !important; margin-top: 15px !important;
+            width: 100%;
+        }
+        button:hover {
+            transform: translateY(-2px) !important; box-shadow: 0 8px 25px rgba(230, 156, 0, 0.5) !important;
+            background: linear-gradient(135deg, #ffb31a 0%, #cc8400 100%) !important;
+        }
+        button:active { transform: translateY(1px) !important; box-shadow: 0 2px 10px rgba(230, 156, 0, 0.3) !important; }
 
         .error-msg { color: #FF4C4C; font-size: 13px; text-align: center; margin-top: 15px; display: none; font-weight: 500; }
 
-        /* Background Particles */
+        /* Floating Background Particles */
         .particle { position: absolute; background: var(--gold); border-radius: 50%; opacity: 0.2; animation: float 15s infinite linear; }
         @keyframes float { 0% { transform: translateY(100vh) scale(0); opacity: 0; } 50% { opacity: 0.5; } 100% { transform: translateY(-100px) scale(1); opacity: 0; } }
-    </style>
-    <style>
-        /* =================================================================
-           THE HIVE: PREMIUM LOGIN BACKGROUND & GLOW
-           ================================================================= */
-        body {
-            /* Richer, smoother dark espresso-to-black gradient */
-            background: radial-gradient(circle at 50% 40%, #1a1005 0%, #050301 100%) !important;
-            background-attachment: fixed !important;
-            margin: 0;
-            min-height: 100vh;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* THE UPGRADED GLOW: Brighter and wider golden backlight */
-        body::before {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 900px;
-            height: 900px;
-            /* Increased opacity to 0.12 for a much stronger, warmer glow */
-            background: radial-gradient(circle, rgba(255, 170, 0, 0.12) 0%, transparent 65%);
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        /* =================================================================
-           PREMIUM CARD POLISH (Glassmorphism)
-           ================================================================= */
-        .reset-password-container,
-        .login-container {
-            background: rgba(26, 17, 10, 0.85) !important;
-            backdrop-filter: blur(12px) !important;
-            border: 1px solid rgba(255, 170, 0, 0.25) !important; /* Brighter border */
-            border-radius: 20px !important;
-            /* Added a stronger golden shadow directly to the card */
-            box-shadow:
-                0 25px 50px rgba(0, 0, 0, 0.8),
-                0 0 60px rgba(255, 170, 0, 0.15) !important;
-        }
-
-        /* Premium Input Fields */
-        input[type="email"],
-        input[type="password"],
-        input[type="text"] {
-            background: rgba(0, 0, 0, 0.4) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            color: #ffffff !important;
-            border-radius: 8px !important;
-            padding: 12px !important;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        input[type="email"]:focus,
-        input[type="password"]:focus,
-        input[type="text"]:focus {
-            border-color: rgba(255, 170, 0, 0.8) !important;
-            box-shadow: 0 0 15px rgba(255, 170, 0, 0.25) !important;
-            outline: none;
-        }
-
-        /* =================================================================
-           PREMIUM GOLDEN BUTTONS
-           ================================================================= */
-        button,
-        input[type="submit"],
-        .submit-btn {
-            background: linear-gradient(135deg, #e69c00 0%, #b37400 100%) !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(255, 215, 0, 0.4) !important;
-            border-radius: 8px !important;
-            padding: 12px 24px !important;
-            font-weight: bold !important;
-            letter-spacing: 1px !important;
-            /* text-transform: uppercase !important; Optional: removes if you prefer normal text */
-            box-shadow: 0 5px 15px rgba(230, 156, 0, 0.3) !important;
-            transition: all 0.3s ease !important;
-            cursor: pointer !important;
-            margin-top: 15px !important;
-        }
-
-        /* HOVER EFFECT: Button lifts up and glows brighter */
-        button:hover,
-        input[type="submit"]:hover,
-        .submit-btn:hover {
-            transform: translateY(-2px) !important;
-            box-shadow: 0 8px 25px rgba(230, 156, 0, 0.5) !important;
-            background: linear-gradient(135deg, #ffb31a 0%, #cc8400 100%) !important;
-        }
-
-        /* CLICK EFFECT: Button presses down physically */
-        button:active,
-        input[type="submit"]:active,
-        .submit-btn:active {
-            transform: translateY(1px) !important;
-            box-shadow: 0 2px 10px rgba(230, 156, 0, 0.3) !important;
-        }
     </style>
 </head>
 <body>
