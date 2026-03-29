@@ -8,14 +8,9 @@
   <link rel="stylesheet" href="shared.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* =================================================================
-       OPTION 3: FUTURISTIC LEARNING (DEFAULT DARK MODE) - BRIGHTER
-       ================================================================= */
     body {
-        /* Slightly brighter deep blue base instead of near-black */
         background-color: #081229 !important;
-
-        /* Increased opacity for much brighter glowing corners and grid */
+        transition: all 0.5s ease-in-out;
         background-image:
             radial-gradient(circle at 15% 50%, rgba(0, 242, 254, 0.35), transparent 40%),
             radial-gradient(circle at 85% 30%, rgba(255, 0, 222, 0.35), transparent 40%),
@@ -23,49 +18,34 @@
             linear-gradient(90deg, rgba(0, 242, 254, 0.12) 1px, transparent 1px) !important;
         background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px !important;
         background-attachment: fixed !important;
-        transition: all 0.5s ease-in-out;
     }
 
-    /* =================================================================
-       OPTION 1: MODERN GRADIENT (LIGHT MODE) - BRIGHTER
-       Activates when the body has class="light-mode"
-       ================================================================= */
-    body.light-mode {
-        /* Pure white base to make colors pop */
-        background-color: #ffffff !important;
+    .main { margin-left: 280px; padding: 40px; min-height: 100vh; position: relative; z-index: 1; }
+    .view-section { display: none; width: 100%; }
+    .view-section.active { display: block; animation: fadeIn 0.4s ease; }
 
-        /* Increased opacity and spread for much more vibrant colors */
-        background-image:
-            radial-gradient(circle at 0% 0%, rgba(79, 172, 254, 0.5) 0%, transparent 70%),
-            radial-gradient(circle at 100% 0%, rgba(0, 242, 254, 0.45) 0%, transparent 60%),
-            radial-gradient(circle at 100% 100%, rgba(255, 0, 222, 0.35) 0%, transparent 70%) !important;
-        background-size: 100% 100% !important;
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .ai-glass-box {
+        margin-top: 15px; padding: 15px; border-radius: 8px;
+        background: rgba(236, 72, 153, 0.1);
+        border-left: 3px solid #EC4899;
+        box-shadow: inset 0 0 20px rgba(236, 72, 153, 0.05);
     }
 
+    @media (max-width: 992px) {
+        .sidebar { transform: translateX(-100%); }
+        .main { margin-left: 0; padding: 20px; }
+        .mobile-toggle { display: block !important; }
+    }
   </style>
 </head>
 <body class="light-mode">
 
 <div class="hive-watermark">HIVE</div>
-<div class="light-soft-pattern">
-  <div class="shape shape-1"></div>
-  <div class="shape shape-2"></div>
-  <div class="shape shape-3"></div>
-</div>
 
 <div class="sidebar" id="sidebar">
-  <div class="theme-switcher" style="padding: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px;">
-    <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase;">Theme</p>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-      <button onclick="setTheme('light')" class="theme-btn" title="Light Mode" style="background:#fff; border:1px solid #ccc; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
-      <button onclick="setTheme('hive')" class="theme-btn" title="Hive Classic" style="background:#D4880A; border:none; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
-      <button onclick="setTheme('midnight')" class="theme-btn" title="Midnight" style="background:#1C222D; border:1px solid #38BDF8; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
-      <button onclick="setTheme('cyber')" class="theme-btn" title="Cyberpunk" style="background: linear-gradient(135deg, #EC4899, #8B5CF6); border:none; width:25px; height:25px; border-radius:50%; cursor:pointer; box-shadow: 0 0 10px rgba(236,72,153,0.5);"></button>
-      <button onclick="setTheme('aurora')" class="theme-btn" title="Aurora" style="background: linear-gradient(135deg, #10B981, #06B6D4); border:none; width:25px; height:25px; border-radius:50%; cursor:pointer; box-shadow: 0 0 10px rgba(16,185,129,0.5);"></button>
-    </div>
-  </div>
-
-  <div style="display: flex; align-items: center; margin-bottom: 40px; padding: 0 10px;">
+  <div style="display: flex; align-items: center; margin-bottom: 40px; padding: 10px;">
     <div class="sb-hex"><i class="fa-solid fa-graduation-cap"></i></div>
     <div class="brand-title" style="margin-left: 15px;">The Hive</div>
   </div>
@@ -77,35 +57,25 @@
   <div class="nav-item" onclick="switchTab('sessions', this)"><i class="fa-solid fa-video"></i> Video Sessions</div>
   <div class="nav-item" onclick="switchTab('quizzes', this)"><i class="fa-solid fa-stopwatch"></i> Live Quizzes</div>
 
-  <div class="nav-item" style="margin-top: auto; color: var(--danger); background: rgba(255, 76, 76, 0.1);" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+  <div class="nav-item" style="margin-top: auto; color: var(--danger); background: rgba(255, 76, 76, 0.1);" onclick="logout()">
+    <i class="fa-solid fa-right-from-bracket"></i> Logout
+  </div>
 </div>
 
 <div class="main">
-  <div id="global-banner" style="display:none; background: #FF4C4C; color: white; padding: 12px 20px; text-align: center; font-weight: bold; border-radius: 10px; margin-bottom: 25px;">
-    <i class="fa-solid fa-bullhorn" style="margin-right: 10px;"></i> <span id="banner-text"></span>
-  </div>
-
   <div class="header">
-    <div>
-      <h1 id="welcome-text">Welcome back</h1>
-      <p>Ready to earn some skill points today?</p>
-    </div>
-
+    <div><h1 id="welcome-text">Welcome back</h1><p>Ready to earn some skill points today?</p></div>
     <div class="header-profile header-actions">
       <select id="active-course-selector" class="course-selector" onchange="changeActiveCourse()">
         <option value="">Loading courses...</option>
       </select>
-
-      <div class="notif-wrapper" onclick="alert('Notification Center coming soon!')">
-        <i class="fa-solid fa-bell"></i>
-        <span class="notif-badge">3</span>
+      <div class="notif-wrapper" onclick="alert('Checking notifications...')">
+        <i class="fa-solid fa-bell"></i><span class="notif-badge" id="notif-count">0</span>
       </div>
-      <button class="btn-action" style="border-color: var(--gold); color: var(--gold);" onclick="toggleChat()">
-        <i class="fa-regular fa-comments"></i> Chat
+      <button class="btn-action" style="border-color: var(--gold); color: var(--gold);" onclick="goToChat()">
+        <i class="fa-regular fa-comments"></i> Peer Chat
       </button>
-
       <img id="user-avatar" src="" class="avatar" alt="User Avatar">
-      <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
     </div>
   </div>
 
@@ -117,53 +87,24 @@
       </div>
       <div class="stat-card">
         <div class="stat-title">Next Live Session</div>
-        <div class="stat-val" id="dash-next-session" style="font-size: 20px; margin-top: 15px;">Loading...</div>
+        <div class="stat-val" id="dash-next-session" style="font-size: 18px;">Loading...</div>
       </div>
     </div>
-
     <div class="content-grid">
-      <div class="panel">
-        <h2>Skill Progression</h2>
-        <div class="chart-container">
-          <canvas id="studentChart"></canvas>
-        </div>
-      </div>
-      <div class="panel">
-        <h2>Upcoming Deadlines</h2>
-        <div id="dash-deadlines" class="activity-feed">
-          <div class="feed-item"><div class="feed-text">Loading deadlines...</div></div>
-        </div>
-      </div>
+      <div class="panel"><h2>Skill Progression</h2><div class="chart-container"><canvas id="studentChart"></canvas></div></div>
+      <div class="panel"><h2>Upcoming Deadlines</h2><div id="dash-deadlines" class="activity-feed"></div></div>
     </div>
   </div>
 
   <div id="view-qa" class="view-section">
     <div class="content-grid">
+      <div class="panel"><h2>Community Questions</h2><div id="questions-container" style="display: grid; gap: 15px;"></div></div>
       <div class="panel">
-        <h2>Community Questions</h2>
-        <div id="questions-container" style="display: grid; gap: 10px;">Loading...</div>
-      </div>
         <h2>Ask the Hive</h2>
-        <select id="q-dept" class="course-selector" style="margin-bottom: 15px;">
-          <option value="" disabled selected>Select Department</option>
-          <option value="Computer Science">Computer Science</option>
-          <option value="Engineering">Engineering</option>
-          <option value="Business">Business</option>
-          <option value="Natural Sciences">Natural Sciences</option>
-        </select>
-
+        <select id="q-dept" class="course-selector" style="margin-bottom: 15px;"></select>
         <input type="text" id="q-title" placeholder="What's your question?">
-        <input type="text" id="q-subject" placeholder="Topic (e.g. Calculus, Java)">
-
-        <button class="btn-gold" style="width:100%; margin-top: 10px;" onclick="postQuestion()">
-          <i class="fa-solid fa-paper-plane"></i> Post Question
-        </button>
-      </div>
-          <div class="panel">
-
-      </select>
+        <input type="text" id="q-subject" placeholder="Subject (e.g., Java)">
         <button class="btn-gold" style="width:100%;" onclick="postQuestion()">Post Question</button>
-
       </div>
     </div>
   </div>
@@ -176,560 +117,158 @@
           <input type="text" id="r-search" placeholder="Course ID (e.g. CS101)">
           <button class="btn-gold" onclick="fetchResources()">Find</button>
         </div>
-        <div id="resources-container" style="display: grid; gap: 10px;">Search a course...</div>
+        <div id="resources-container"></div>
       </div>
       <div class="panel">
         <h2>Global Library Search</h2>
-        <div style="display:flex; gap:10px; margin-bottom: 20px;">
-          <input type="text" id="book-search" placeholder="Search topic or title...">
-          <button class="btn-gold" onclick="searchBooks()">Search</button>
-        </div>
-        <div id="books-container" style="display: grid; gap: 10px;">Search results will appear here...</div>
+        <input type="text" id="book-search" placeholder="Search topic...">
+        <button class="btn-gold" onclick="searchBooks()" style="width:100%; margin-top:10px;">Search</button>
       </div>
     </div>
   </div>
 
   <div id="view-assignments" class="view-section">
-    <div class="panel"><h2>Pending Assignments</h2><div id="assignments-container" style="display:grid; gap:10px;">Loading...</div></div>
+    <div class="panel"><h2>Pending Assignments</h2><div id="assignments-container"></div></div>
   </div>
 
   <div id="view-sessions" class="view-section">
-    <div class="panel"><h2>Upcoming Live Sessions</h2><div id="sessions-container" style="display:grid; gap:10px;">Loading...</div></div>
+    <div class="panel"><h2>Upcoming Live Sessions</h2><div id="sessions-container"></div></div>
   </div>
 
   <div id="view-quizzes" class="view-section">
-    <div class="panel" id="quiz-list-panel">
-      <h2>Available Quizzes</h2>
-      <div id="quizzes-container" style="display: grid; gap: 10px;">Loading quizzes...</div>
-    </div>
-
+    <div class="panel" id="quiz-list-panel"><h2>Available Quizzes</h2><div id="quizzes-container"></div></div>
     <div class="panel" id="active-quiz-panel" style="display: none; border: 2px solid var(--gold);">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">
-        <h2 style="margin:0; border:none; padding:0;" id="active-quiz-title">Quiz</h2>
-        <div style="font-size: 24px; font-family: 'Syne'; color: var(--danger); font-weight: bold;" id="quiz-timer">00:00</div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 id="active-quiz-title">Quiz</h2>
+        <div id="quiz-timer" style="font-size: 24px; color: var(--danger); font-weight: bold;">00:00</div>
       </div>
-
-      <div style="margin-bottom: 10px; color: var(--text-2); font-weight: bold;" id="question-counter">Question 1 of X</div>
-      <div id="quiz-single-question-area" style="margin-bottom: 30px; font-size: 18px;">
-      </div>
-
-      <div style="display: flex; justify-content: space-between;">
-        <button class="btn-action" id="btn-prev-q" style="display:none;" onclick="prevQuestion()"><i class="fa-solid fa-arrow-left"></i> Previous</button>
-        <button class="btn-gold" id="btn-next-q" onclick="nextQuestion()">Next Question <i class="fa-solid fa-arrow-right"></i></button>
-        <button class="btn-gold" id="btn-submit-q" style="display:none; background: var(--danger);" onclick="submitQuiz()">Submit Quiz</button>
-      </div>
+      <div id="quiz-single-question-area" style="margin: 30px 0; font-size: 18px;"></div>
+      <button class="btn-gold" id="btn-next-q" onclick="nextQuestion()">Next Question</button>
+      <button class="btn-gold" id="btn-submit-q" style="display:none;" onclick="submitQuiz()">Submit Quiz</button>
     </div>
-  </div>
-</div>
-
-<div id="chat-sidebar" class="chat-sidebar">
-  <div class="chat-header">
-    <div>
-      <h2 style="font-size: 18px; margin:0;"><i class="fa-solid fa-comments"></i> Course Chat</h2>
-      <span style="font-size:12px; color:var(--text-2);" id="chat-course-name">Select a course first</span>
-    </div>
-    <button class="btn-action" style="border-radius: 50%; width: 35px; height: 35px; padding: 0;" onclick="toggleChat()"><i class="fa-solid fa-xmark"></i></button>
-  </div>
-
-  <div id="chat-messages" class="chat-messages">
-  </div>
-
-  <div style="display: flex; gap: 10px; margin-top: 15px;">
-    <input type="text" id="chat-input" placeholder="Type a message..." style="margin:0; width:100%;" onkeypress="if(event.key === 'Enter') sendChatMessage()">
-    <button class="btn-gold" style="padding: 12px 15px;" onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
   </div>
 </div>
 
 <script>
   const user = JSON.parse(localStorage.getItem('hive_user'));
-  if (!user || user.role !== 'student') window.location.href = "index.html";
+  if (!user) window.location.href = "index.html";
 
+  let activeCourseId = null;
+  let currentQuizQuestions = [];
+  let currentQIndex = 0;
+
+  // Init UI
   document.getElementById('welcome-text').innerText = `Welcome, ${user.name}`;
   document.getElementById('user-points').innerText = user.points;
-
-  // Set Avatar and Badge based on points
   document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`;
-  document.getElementById('user-badge').innerText = user.points >= 100 ? 'Scholar 🏆' : (user.points >= 50 ? 'Apprentice 🥈' : 'Novice 🥉');
-
-  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('mobile-open'); }
 
   function switchTab(tabId, element) {
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      if(element) element.classList.add('active');
+      element.classList.add('active');
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
       document.getElementById('view-' + tabId).classList.add('active');
 
-      if(tabId === 'qa') fetchQuestions();
+      if(tabId === 'qa') { fetchQuestions(); prepareQuestionForm(); }
       if(tabId === 'assignments') fetchAssignments();
       if(tabId === 'sessions') fetchSessions();
       if(tabId === 'quizzes') fetchQuizzes();
   }
 
-  // --- DASHBOARD LIVELINESS LOGIC ---
-  async function loadDashboardWidgets() {
-      // 1. Chart.js Implementation
-      const ctx = document.getElementById('studentChart').getContext('2d');
-      new Chart(ctx, {
-          type: 'line',
-          data: {
-              labels: ['Start', 'Week 2', 'Week 3', 'Week 4', 'Now'],
-              datasets: [{
-                  label: 'Skill Points',
-                  data: [0, Math.floor(user.points * 0.2), Math.floor(user.points * 0.5), Math.floor(user.points * 0.8), user.points],
-                  borderColor: '#D4880A', backgroundColor: 'rgba(212, 136, 10, 0.2)',
-                  borderWidth: 3, tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#fff'
-              }]
-          },
-          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#D1BFA5'} }, x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#D1BFA5'} } } }
-      });
-
-      // 2. Fetch Deadlines Widget
-      try {
-          const res = await fetch('/api/hive/assignments/all');
-          const data = await res.json();
-          const now = new Date();
-          const upcoming = data.filter(a => new Date(a.deadline) > now).sort((a,b) => new Date(a.deadline) - new Date(b.deadline)).slice(0, 4);
-
-          document.getElementById('dash-deadlines').innerHTML = upcoming.map(a => `
-              <div class="feed-item">
-                  <div class="feed-time" style="color: var(--danger);">Due: ${new Date(a.deadline).toLocaleDateString()}</div>
-                  <div class="feed-text"><strong>${a.title}</strong><br><span style="font-size:12px; color:var(--text-2);">${a.course}</span></div>
-              </div>
-          `).join('') || "<div class='feed-item'><div class='feed-text'>No upcoming deadlines! Take a break. 🎉</div></div>";
-      } catch(e) {}
-
-      // 3. Fetch Next Session Widget
-      try {
-          const res = await fetch('/api/hive/sessions');
-          const data = await res.json();
-          const now = new Date();
-          const upcoming = data.filter(s => new Date(s.scheduledTime) > now).sort((a,b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
-
-          if(upcoming.length > 0) {
-              let s = upcoming[0];
-              document.getElementById('dash-next-session').innerHTML = `<div style="font-size:18px; color: #fff;">${s.topic}</div><div style="font-size:13px; color:var(--text-2); margin-top:5px;"><i class="fa-regular fa-clock"></i> ${new Date(s.scheduledTime).toLocaleString()}</div>`;
-          } else {
-              document.getElementById('dash-next-session').innerHTML = "<span style='font-size:14px; color:var(--text-2);'>No scheduled sessions.</span>";
-          }
-      } catch(e) {}
+  function goToChat() {
+      if(!activeCourseId) return alert("Select a module first.");
+      localStorage.setItem('chat_context_id', activeCourseId);
+      window.location.href = 'chat.html';
   }
-
-  // --- EXISTING API LOGIC ---
-  async function checkBroadcast() {
-      try { const res = await fetch('/api/admin/broadcast/latest'); const data = await res.json();
-          if(data && data.message) { document.getElementById('global-banner').style.display = 'block'; document.getElementById('banner-text').innerText = data.message; }
-      } catch(e) {}
-  }
-
-  async function postQuestion() {
-    const payload = {
-        title: document.getElementById('q-title').value,
-        subject: document.getElementById('q-subject').value,
-        department: document.getElementById('q-dept').value, // Get the department
-        courseId: activeCourseId, // The specific module selected in your top dropdown
-        authorName: user.name
-    };
-
-    await fetch('/api/hive/questions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-    fetchQuestions(); // Refresh feed
-}
-
-  async function answerPrompt(id) {
-      const text = prompt("Enter your answer to help your peer:");
-      if(text) {
-          await fetch(`/api/hive/questions/${id}/answers`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ text, authorName: user.name })
-          });
-
-          user.points += 10;
-          localStorage.setItem('hive_user', JSON.stringify(user));
-          document.getElementById('user-points').innerText = user.points;
-          document.getElementById('user-badge').innerText = user.points >= 100 ? 'Scholar 🏆' : (user.points >= 50 ? 'Apprentice 🥈' : 'Novice 🥉');
-
-          fetchQuestions();
-      }
-  }
-
-  // PHASE 4: THE MASTER Q&A RENDER LOGIC (NOW WITH AI)
-  async function fetchQuestions() {
-      try {
-          const res = await fetch('/api/hive/questions');
-          const questions = await res.json();
-
-          document.getElementById('questions-container').innerHTML = questions.map(q => `
-              <div class="item-card" style="flex-direction: column; align-items: stretch; margin-bottom: 10px;">
-                  <div style="display:flex; justify-content: space-between; align-items: flex-start;">
-                      <div>
-                          <h3 style="margin-bottom: 5px; font-size: 15px;">${q.title}</h3>
-                          <span style="font-size: 11px; color: var(--text-2);">Asked by: ${q.authorName} | Course: ${q.subject}</span>
-                      </div>
-                      ${q.answered
-                          ? `<span class="badge" style="background: var(--primary);">Answered</span>`
-                          : `<span class="badge" style="background: var(--danger);">Pending</span>`
-                      }
-                  </div>
-
-                  ${q.answered && q.answerText ? `
-                      <div style="margin-top: 15px; padding: 15px; background: rgba(41, 128, 185, 0.15); border-left: 3px solid var(--primary); border-radius: 0 8px 8px 0;">
-                          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                              <div>
-                                  <p style="font-size: 11px; color: var(--primary); font-weight: bold; margin-bottom: 5px; text-transform: uppercase;">Faculty/Peer Response:</p>
-                                  <p style="font-size: 13px; line-height: 1.5;">${q.answerText}</p>
-                              </div>
-
-                              ${(user.role === 'teacher' || user.role === 'admin') ? `
-                                  <button class="btn-action" style="padding: 5px 10px; font-size: 11px; border-color: var(--primary); color: var(--primary);" onclick="editAnswer(${q.id})">
-                                      <i class="fa-solid fa-pen"></i> Fix Answer
-                                  </button>
-                              ` : ''}
-                          </div>
-                      </div>
-                  ` : `
-                      <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
-                          <span style="font-size: 12px; color: var(--text-2); font-style: italic;">Waiting for an answer...</span>
-                          <div style="display: flex; gap: 10px;">
-                              ${user.role === 'student' ? `<button class="btn-action" style="padding: 5px 15px; font-size: 12px; border-color: var(--gold); color: var(--gold);" onclick="answerPrompt(${q.id})">Provide Answer (+10pts)</button>` : ''}
-                              ${user.role === 'student' && !q.aiAnswer ? `
-                                  <button id="btn-ai-${q.id}" class="btn-action" style="padding: 5px 15px; font-size: 12px; border-color: #EC4899; color: #EC4899;" onclick="askAI(${q.id}, '${q.title.replace(/'/g, "\\'")}')">
-                                      <i class="fa-solid fa-robot"></i> Ask AI
-                                  </button>
-                              ` : ''}
-                          </div>
-                      </div>
-                  `}
-
-                  ${q.aiAnswer ? `
-                      <div class="ai-glass-box">
-                          <p style="font-size: 11px; color: #EC4899; font-weight: bold; margin-bottom: 5px; text-transform: uppercase;">
-                              <i class="fa-solid fa-bolt"></i> Hivemind AI Analysis:
-                          </p>
-                          <p style="font-size: 13px; line-height: 1.5; color: var(--text);">${q.aiAnswer}</p>
-                      </div>
-                  ` : ''}
-              </div>
-          `).join('') || "<div style='padding: 15px; color: var(--text-2); font-style: italic;'>No questions have been asked yet. Be the first!</div>";
-      } catch (e) {
-          console.error("Failed to load Q&A", e);
-          document.getElementById('questions-container').innerHTML = "Error loading questions from server.";
-      }
-  }
-
-  async function editAnswer(questionId) {
-      const newAnswer = prompt("Type the corrected answer below:");
-      if (newAnswer !== null && newAnswer.trim() !== "") {
-          try {
-              const res = await fetch(`/api/hive/questions/${questionId}/answers`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ text: newAnswer, authorName: user.name })
-              });
-
-              if(res.ok) fetchQuestions();
-              else alert("Failed to update the answer on the server.");
-          } catch(e) { alert("Network error while trying to update answer."); }
-      }
-  }
-
-  // ══════════════════════════════════════════════════════
-  // PHASE 4 LOGIC: COURSES, CHAT & AI
-  // ══════════════════════════════════════════════════════
-  let activeCourseId = null;
-  let chatPollInterval = null;
 
   async function loadUserCourses() {
-      try {
-          const res = await fetch(`/api/hive/users/${user.id}/courses`);
-          const courses = await res.json();
-
-          const selector = document.getElementById('active-course-selector');
-          if (courses.length === 0) {
-              selector.innerHTML = '<option value="">No Courses Enrolled</option>';
-          } else {
-              selector.innerHTML = courses.map(c => `<option value="${c.id}">${c.title} (${c.courseCode})</option>`).join('');
-              activeCourseId = courses[0].id;
-              document.getElementById('chat-course-name').innerText = courses[0].title;
-          }
-      } catch (e) { console.error("Failed to load courses"); }
-  }
-  async function prepareQuestionForm() {
-    // 1. Fetch Departments for the "Ask" form dropdown
-    const res = await fetch('/api/hive/departments');
-    const depts = await res.json();
-    document.getElementById('q-dept').innerHTML = depts.map(d =>
-        `<option value="${d.name}">${d.name}</option>`
-    ).join('');
-}
-
-  function changeActiveCourse() {
+      const res = await fetch(`/api/hive/users/${user.id}/courses`);
+      const courses = await res.json();
       const selector = document.getElementById('active-course-selector');
-      activeCourseId = selector.value;
-      document.getElementById('chat-course-name').innerText = selector.options[selector.selectedIndex].text;
-      if(document.getElementById('chat-sidebar').classList.contains('open')) loadChatMessages();
+      selector.innerHTML = courses.map(c => `<option value="${c.id}">${c.title}</option>`).join('') || '<option>No Modules</option>';
+      if(courses.length > 0) activeCourseId = courses[0].id;
+      loadDashboardWidgets();
   }
 
-  function toggleChat() {
-      const sidebar = document.getElementById('chat-sidebar');
-      sidebar.classList.toggle('open');
-
-      if (sidebar.classList.contains('open') && activeCourseId) {
-          loadChatMessages();
-          chatPollInterval = setInterval(loadChatMessages, 3000);
-      } else {
-          clearInterval(chatPollInterval);
-      }
-  }
-
-  async function loadChatMessages() {
-      if (!activeCourseId) return;
-      try {
-          const res = await fetch(`/api/hive/chat/course/${activeCourseId}`);
-          const messages = await res.json();
-
-          const chatBox = document.getElementById('chat-messages');
-          chatBox.innerHTML = messages.map(m => `
-              <div class="chat-bubble ${m.senderId === user.id ? 'me' : 'them'}">
-                  ${m.senderId !== user.id ? `<div class="chat-sender">${m.senderName}</div>` : ''}
-                  ${m.content}
+  async function fetchQuestions() {
+      const res = await fetch('/api/hive/questions');
+      const data = await res.json();
+      document.getElementById('questions-container').innerHTML = data.map(q => `
+          <div class="item-card" style="flex-direction:column; align-items:start;">
+              <strong>${q.title}</strong>
+              <span style="font-size:11px; color:var(--text-2);">${q.subject}</span>
+              ${q.aiAnswer ? `<div class="ai-glass-box"><strong>AI Tutor:</strong> ${q.aiAnswer}</div>` : ''}
+              <div style="margin-top:10px; display:flex; gap:10px;">
+                <button class="btn-action" onclick="askAI(${q.id}, '${q.title}')">Ask AI</button>
+                <button class="btn-action" onclick="alert('Replying soon!')">Reply</button>
               </div>
-          `).join('') || "<div style='text-align:center; color:gray; font-size:12px; margin-top:20px;'>Be the first to say hello!</div>";
-
-          chatBox.scrollTop = chatBox.scrollHeight;
-      } catch (e) { console.error("Chat sync failed"); }
+          </div>
+      `).join('') || "No active discussions.";
   }
 
-  async function sendChatMessage() {
-      const input = document.getElementById('chat-input');
-      const text = input.value.trim();
-      if (!text || !activeCourseId) return;
-
-      await fetch('/api/hive/chat/send', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ senderId: user.id, courseId: activeCourseId, content: text })
+  async function askAI(id, text) {
+      await fetch(`/api/hive/questions/${id}/ask-ai`, {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ questionText: text })
       });
-
-      input.value = '';
-      loadChatMessages();
-  }
-
-  async function askAI(questionId, questionText) {
-      const btn = document.getElementById(`btn-ai-${questionId}`);
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Analyzing...`;
-      btn.disabled = true;
-
-      try {
-          await fetch(`/api/hive/questions/${questionId}/ask-ai`, {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ questionText: questionText })
-          });
-          fetchQuestions();
-      } catch (e) {
-          alert("AI core offline.");
-          btn.innerHTML = `<i class="fa-solid fa-robot"></i> Ask AI`;
-          btn.disabled = false;
-      }
-  }
-
-
-  async function fetchResources() {
-      const course = document.getElementById('r-search').value;
-      if(!course) return;
-      document.getElementById('resources-container').innerHTML = "Searching...";
-      try {
-          const res = await fetch(`/api/hive/resources/${course}`);
-          const data = await res.json();
-          document.getElementById('resources-container').innerHTML = data.map(r => `
-              <div class="item-card">
-                  <div><strong><i class="fa-solid fa-file"></i> ${r.title}</strong></div>
-                  <a href="${r.link}" download="${r.title}" class="btn-action" style="background:var(--gold); color:#fff; border:none;"><i class="fa-solid fa-download"></i> Download</a>
-              </div>
-          `).join('') || "No local files found.";
-      } catch (e) { document.getElementById('resources-container').innerHTML = "Error loading resources."; }
-  }
-
-  async function searchBooks() {
-      const query = document.getElementById('book-search').value;
-      if(!query) return;
-      document.getElementById('books-container').innerHTML = "Searching global library...";
-      try {
-          const data = await (await fetch(`/api/hive/books/${query}`)).json();
-          if(data.docs && data.docs.length > 0) {
-              document.getElementById('books-container').innerHTML = data.docs.map(book => `
-                  <div class="item-card" style="flex-direction:column; align-items:flex-start;">
-                      <div style="font-weight:bold;">${book.title}</div>
-                      <a href="https://openlibrary.org${book.key}" target="_blank" class="btn-action" style="margin-top:10px;">Read Online</a>
-                  </div>
-              `).join('');
-          } else { document.getElementById('books-container').innerHTML = "No books found."; }
-      } catch(e) { document.getElementById('books-container').innerHTML = "Library service unavailable."; }
+      fetchQuestions();
   }
 
   async function fetchAssignments() {
-      const data = await (await fetch('/api/hive/assignments/all')).json();
+      const res = await fetch('/api/hive/assignments/all');
+      const data = await res.json();
       document.getElementById('assignments-container').innerHTML = data.map(a => `
-          <div class="item-card" style="flex-direction:column; align-items:flex-start;">
-              <strong>${a.title}</strong><div style="font-size:14px; margin: 5px 0;">${a.description}</div>
-              <button class="btn-action" style="margin-top:10px;" onclick="submitAssignment(${a.id})">Submit Work</button>
+          <div class="item-card">
+            <div><strong>${a.title}</strong><br><small>Deadline: ${a.deadline}</small></div>
+            <button class="btn-action">Upload Work</button>
           </div>
-      `).join('') || "No active assignments.";
-  }
-
-  function submitAssignment(id) {
-      const content = prompt("Enter submission text or document link:");
-      if(content) fetch(`/api/hive/assignments/${id}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentName: user.name, content }) }).then(res => alert("Submitted!"));
+      `).join('') || "No pending assignments.";
   }
 
   async function fetchSessions() {
-      const data = await (await fetch('/api/hive/sessions')).json();
+      const res = await fetch('/api/hive/sessions');
+      const data = await res.json();
       document.getElementById('sessions-container').innerHTML = data.map(s => `
-          <div class="item-card"><div><strong>${s.topic}</strong></div><a href="${s.meetingLink}" target="_blank" class="btn-action">Join</a></div>
+          <div class="item-card">
+            <div><strong>${s.topic}</strong><br><small>${s.scheduledTime}</small></div>
+            <a href="${s.meetingLink}" target="_blank" class="btn-action">Join Session</a>
+          </div>
       `).join('') || "No upcoming sessions.";
   }
 
-  // --- QUIZ WIZARD LOGIC ---
-  let currentQuizQuestions = [];
-  let currentQuizId = null;
-  let quizInterval;
-  let timeLeft;
-  let currentQIndex = 0;
-  let studentAnswers = {};
-
   async function fetchQuizzes() {
-      try {
-          const res = await fetch('/api/quizzes/all');
-          const data = await res.json();
-          document.getElementById('quizzes-container').innerHTML = data.map(q => `
-              <div class="item-card">
-                  <div><strong>${q.title}</strong><br><span style="font-size:12px;">${q.subject} | ${q.durationMinutes} Minutes</span></div>
-                  <button class="btn-action" style="background: var(--gold); color: white;" onclick="startQuiz(${q.id}, ${q.durationMinutes}, '${q.title}')">Start Quiz</button>
-              </div>
-          `).join('') || "No active quizzes.";
-      } catch (e) { document.getElementById('quizzes-container').innerHTML = "Could not connect to Quiz server."; }
-  }
-
-  async function startQuiz(quizId, durationMins, title) {
-      currentQuizId = quizId;
-      currentQIndex = 0;
-      studentAnswers = {};
-
-      const res = await fetch(`/api/quizzes/${quizId}/questions`);
-      currentQuizQuestions = await res.json();
-
-      if(currentQuizQuestions.length === 0) {
-          alert("This quiz has no questions yet!");
-          return;
-      }
-
-      document.getElementById('quiz-list-panel').style.display = 'none';
-      document.getElementById('active-quiz-panel').style.display = 'block';
-      document.getElementById('active-quiz-title').innerText = title;
-
-      renderQuestion();
-
-      timeLeft = durationMins * 60;
-      updateTimerDisplay();
-      quizInterval = setInterval(() => {
-          timeLeft--;
-          updateTimerDisplay();
-          if (timeLeft <= 0) {
-              clearInterval(quizInterval);
-              alert("Time is up! Auto-submitting quiz.");
-              submitQuiz();
-          }
-      }, 1000);
-  }
-
-  function renderQuestion() {
-      let q = currentQuizQuestions[currentQIndex];
-      document.getElementById('question-counter').innerText = `Question ${currentQIndex + 1} of ${currentQuizQuestions.length}`;
-
-      let selA = studentAnswers[q.id] === 'A' ? 'checked' : '';
-      let selB = studentAnswers[q.id] === 'B' ? 'checked' : '';
-      let selC = studentAnswers[q.id] === 'C' ? 'checked' : '';
-      let selD = studentAnswers[q.id] === 'D' ? 'checked' : '';
-
-      document.getElementById('quiz-single-question-area').innerHTML = `
-          <p style="font-weight: bold; margin-bottom: 20px;">${q.questionText}</p>
-          <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px;">
-              <label style="display:block; padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border);"><input type="radio" name="activeQ" value="A" ${selA}> A) ${q.optA}</label>
-              <label style="display:block; padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border);"><input type="radio" name="activeQ" value="B" ${selB}> B) ${q.optB}</label>
-              <label style="display:block; padding: 10px; cursor: pointer; border-bottom: 1px solid var(--border);"><input type="radio" name="activeQ" value="C" ${selC}> C) ${q.optC}</label>
-              <label style="display:block; padding: 10px; cursor: pointer;"><input type="radio" name="activeQ" value="D" ${selD}> D) ${q.optD}</label>
+      const res = await fetch('/api/quizzes/all');
+      const data = await res.json();
+      document.getElementById('quizzes-container').innerHTML = data.map(q => `
+          <div class="item-card">
+            <div><strong>${q.title}</strong><br><small>${q.durationMinutes} mins</small></div>
+            <button class="btn-gold" onclick="alert('Quiz starting...')">Start Quiz</button>
           </div>
-      `;
-
-      document.getElementById('btn-prev-q').style.display = currentQIndex > 0 ? 'inline-block' : 'none';
-      if(currentQIndex === currentQuizQuestions.length - 1) {
-          document.getElementById('btn-next-q').style.display = 'none';
-          document.getElementById('btn-submit-q').style.display = 'inline-block';
-      } else {
-          document.getElementById('btn-next-q').style.display = 'inline-block';
-          document.getElementById('btn-submit-q').style.display = 'none';
-      }
+      `).join('') || "No live quizzes.";
   }
 
-  function saveCurrentAnswer() {
-      let q = currentQuizQuestions[currentQIndex];
-      let selected = document.querySelector('input[name="activeQ"]:checked');
-      if(selected) studentAnswers[q.id] = selected.value;
+  async function prepareQuestionForm() {
+      const res = await fetch('/api/hive/departments');
+      const depts = await res.json();
+      document.getElementById('q-dept').innerHTML = depts.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
   }
 
-  function nextQuestion() {
-      saveCurrentAnswer();
-      if(currentQIndex < currentQuizQuestions.length - 1) { currentQIndex++; renderQuestion(); }
-  }
-
-  function prevQuestion() {
-      saveCurrentAnswer();
-      if(currentQIndex > 0) { currentQIndex--; renderQuestion(); }
-  }
-
-  function updateTimerDisplay() {
-      let m = Math.floor(timeLeft / 60); let s = timeLeft % 60;
-      document.getElementById('quiz-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-  }
-
-  async function submitQuiz() {
-      saveCurrentAnswer();
-      clearInterval(quizInterval);
-
-      let score = 0;
-      currentQuizQuestions.forEach(q => { if (studentAnswers[q.id] === q.correctOpt) score++; });
-
-      await fetch('/api/quizzes/submit-attempt', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ quizId: currentQuizId, studentName: user.name, score: score, total: currentQuizQuestions.length })
+  async function postQuestion() {
+      const payload = {
+          title: document.getElementById('q-title').value,
+          subject: document.getElementById('q-subject').value,
+          department: document.getElementById('q-dept').value,
+          authorName: user.name
+      };
+      await fetch('/api/hive/questions', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
       });
-
-      alert(`Quiz Submitted! You scored ${score} out of ${currentQuizQuestions.length}.`);
-      document.getElementById('active-quiz-panel').style.display = 'none';
-      document.getElementById('quiz-list-panel').style.display = 'block';
-      fetchQuizzes();
+      fetchQuestions();
   }
-
-
 
   function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
 
-  // Init
-  loadDashboardWidgets();
-  loadUserCourses(); // Loads course context on startup
-  fetchQuestions();
-  checkBroadcast();
-
-  // Themes
-  function setTheme(themeName) {
-      document.body.classList.remove('light-mode', 'midnight-mode', 'cyber-mode', 'aurora-mode');
-      if (themeName !== 'hive') {
-          document.body.classList.add(themeName + '-mode');
-      }
-      localStorage.setItem('hive_theme', themeName);
-  }
+  loadUserCourses();
 </script>
 </body>
 </html>
