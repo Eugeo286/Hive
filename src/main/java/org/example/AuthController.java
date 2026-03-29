@@ -1,5 +1,13 @@
 package org.example;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.web.client.RestTemplate;
+import java.util.Map;
+import java.util.List;
+import java.util.HashMap;
+
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,13 +22,12 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.Random;
 
+
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
 public class AuthController {
 
-    @Autowired
-    private JavaMailSender mailSender;
 
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> body) {
@@ -50,12 +57,7 @@ public class AuthController {
 
         // 3. Send the email via JavaMailSender
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(email);
-            message.setSubject("The Hive - Password Reset Code");
-            message.setText("Hello,\n\nYour password reset code is: " + code +
-                    "\n\nThis code will expire in 15 minutes.\n\n- The Hive Team");
-            mailSender.send(message);
+            sendEmailViaBrevoApi(email, code);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body("Failed to send email. Check SMTP credentials.");
@@ -117,5 +119,41 @@ public class AuthController {
         }
 
         return ResponseEntity.ok("Password reset successfully. You can now log in.");
+    }
+
+    private void sendEmailViaBrevoApi(String toEmail, String code) {
+        String apiKey = System.getenv("BREVO_API_KEY");
+
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("api-key", apiKey);
+        headers.set("Content-Type", "application/json");
+        headers.set("Accept", "application/json");
+
+        // The Sender (Must be your registered Brevo email)
+        Map<String, Object> sender = new HashMap<>();
+        sender.put("email", "nanamensah571@gmail.com");
+        sender.put("name", "The Hive");
+
+        // The Receiver
+        Map<String, Object> to = new HashMap<>();
+        to.put("email", toEmail);
+
+        // Build the JSON Email Body
+        Map<String, Object> body = new HashMap<>();
+        body.put("sender", sender);
+        body.put("to", List.of(to));
+        body.put("subject", "The Hive - Password Reset Code");
+        body.put("textContent", "Your 6-digit password reset code is: " + code);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+        // Fire the web request (Bypasses Railway SMTP blocks!)
+        restTemplate.exchange(
+                "https://api.brevo.com/v3/smtp/email",
+                HttpMethod.POST,
+                request,
+                String.class
+        );
     }
 }
