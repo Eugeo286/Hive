@@ -6,406 +6,107 @@
     <title>The Hive | Admin Command</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="shared.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <style>
-    .role-select { background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: var(--gold); padding: 5px; border-radius: 5px; cursor: pointer; }
-</style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* =================================================================
-           OPTION 3: FUTURISTIC LEARNING (DEFAULT DARK MODE) - BRIGHTER
-           ================================================================= */
-        body {
-            /* Slightly brighter deep blue base instead of near-black */
-            background-color: #081229 !important;
-
-            /* Increased opacity for much brighter glowing corners and grid */
-            background-image:
-                radial-gradient(circle at 15% 50%, rgba(0, 242, 254, 0.35), transparent 40%),
-                radial-gradient(circle at 85% 30%, rgba(255, 0, 222, 0.35), transparent 40%),
-                linear-gradient(rgba(0, 242, 254, 0.12) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 242, 254, 0.12) 1px, transparent 1px) !important;
-            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px !important;
-            background-attachment: fixed !important;
-            transition: all 0.5s ease-in-out;
-        }
-
-        /* =================================================================
-           OPTION 1: MODERN GRADIENT (LIGHT MODE) - BRIGHTER
-           Activates when the body has class="light-mode"
-           ================================================================= */
-        body.light-mode {
-            /* Pure white base to make colors pop */
-            background-color: #ffffff !important;
-
-            /* Increased opacity and spread for much more vibrant colors */
-            background-image:
-                radial-gradient(circle at 0% 0%, rgba(79, 172, 254, 0.5) 0%, transparent 70%),
-                radial-gradient(circle at 100% 0%, rgba(0, 242, 254, 0.45) 0%, transparent 60%),
-                radial-gradient(circle at 100% 100%, rgba(255, 0, 222, 0.35) 0%, transparent 70%) !important;
-            background-size: 100% 100% !important;
-        }
-
+        body { background-color: #081229 !important; transition: all 0.5s ease-in-out;
+               background-image: radial-gradient(circle at 15% 50%, rgba(0, 242, 254, 0.35), transparent 40%), radial-gradient(circle at 85% 30%, rgba(255, 0, 222, 0.35), transparent 40%), linear-gradient(rgba(0, 242, 254, 0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 254, 0.12) 1px, transparent 1px) !important; background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px !important; background-attachment: fixed !important; }
+        .main { margin-left: 280px; flex: 1; padding: 40px; position: relative; z-index: 1; }
+        .view-section { display: none; }
+        .view-section.active { display: block; animation: fadeIn 0.4s ease; }
     </style>
 </head>
 <body class="light-mode">
-<div class="light-soft-pattern">
-    <div class="shape shape-1"></div>
-    <div class="shape shape-2"></div>
-    <div class="shape shape-3"></div>
-</div>
-
 <div class="hive-watermark">HIVE</div>
 
 <div class="sidebar" id="sidebar">
-    <div class="theme-switcher" style="padding: 20px; border-top: 1px solid var(--border); margin-top: 20px;">
-        <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase;">Theme</p>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="setTheme('light')" class="theme-btn" title="Light Mode" style="background:#fff; border:1px solid #ccc; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
-            <button onclick="setTheme('hive')" class="theme-btn" title="Hive Classic" style="background:#D4880A; border:none; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
-            <button onclick="setTheme('midnight')" class="theme-btn" title="Midnight" style="background:#1C222D; border:1px solid #38BDF8; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
-            <button onclick="setTheme('cyber')" class="theme-btn" title="Cyberpunk" style="background: linear-gradient(135deg, #EC4899, #8B5CF6); border:none; width:25px; height:25px; border-radius:50%; cursor:pointer; box-shadow: 0 0 10px rgba(236,72,153,0.5);"></button>
-            <button onclick="setTheme('aurora')" class="theme-btn" title="Aurora" style="background: linear-gradient(135deg, #10B981, #06B6D4); border:none; width:25px; height:25px; border-radius:50%; cursor:pointer; box-shadow: 0 0 10px rgba(16,185,129,0.5);"></button>
-        </div>
-    </div>
-
-    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 40px;">
-        <div class="sb-hex" style="background: linear-gradient(135deg, #4CAF50, #1b5e20); box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);"><i class="fa-solid fa-bolt"></i></div>
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 40px; padding: 20px;">
+        <div class="sb-hex" style="background: #4CAF50;"><i class="fa-solid fa-bolt"></i></div>
         <div class="brand-title">OVERSEER</div>
     </div>
-
     <div class="nav-item active" onclick="switchTab('system', this)"><i class="fa-solid fa-chart-line"></i> System Overview</div>
     <div class="nav-item" onclick="switchTab('users', this)"><i class="fa-solid fa-users-gear"></i> User Registry</div>
     <div class="nav-item" onclick="switchTab('progress', this)"><i class="fa-solid fa-chart-pie"></i> Student Progress</div>
-    <div class="nav-item" onclick="switchTab('resources', this)"><i class="fa-solid fa-folder-open"></i> Global Resources</div>
-    <div class="nav-item" onclick="switchTab('mod', this)"><i class="fa-solid fa-shield-halved"></i> Moderation</div>
-
     <div class="nav-item" style="margin-top: auto; color: var(--danger);" onclick="logout()"><i class="fa-solid fa-power-off"></i> Terminate</div>
 </div>
 
 <div class="main">
     <div class="header">
         <div><h1>Command Center</h1><p>System Status: <span style="color: #4CAF50; font-weight: bold;">ONLINE</span></p></div>
-        <div class="header-profile">
-            <span class="badge" style="background: #4CAF50;">System Admin</span>
-            <img id="user-avatar" src="" class="avatar" alt="Admin Avatar" style="border-color: #4CAF50;">
-        </div>
+        <div class="header-profile"><span class="badge" style="background: #4CAF50;">System Admin</span></div>
     </div>
 
     <div id="view-system" class="view-section active">
-
         <div class="panel" style="border-left: 4px solid var(--gold); margin-bottom: 25px; background: rgba(212, 136, 10, 0.05);">
-            <h2 style="color: var(--gold);"><i class="fa-solid fa-sitemap"></i> Hive Architect</h2>
-            <div class="content-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
-
-                <div style="padding-right: 20px; border-right: 1px solid rgba(255,255,255,0.1);">
-                    <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">1. Define Department</p>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="new-dept-name" placeholder="e.g. Computer Science" style="margin:0;">
-                        <button class="btn-gold" onclick="saveDept()" style="padding: 0 20px;">Create</button>
-                    </div>
-                </div>
-
-                <div>
-                    <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">2. Deploy Course Module</p>
-                    <select id="dept-selector" class="course-selector" style="margin-bottom: 10px;">
-                        <option value="">Select Department...</option>
-                    </select>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="new-course-code" placeholder="Code (CS101)" style="flex: 1;">
-                        <input type="text" id="new-course-title" placeholder="Module Title" style="flex: 2;">
-                    </div>
-                    <button class="btn-gold" style="width: 100%; margin-top: 10px;" onclick="saveCourse()">Deploy to Network</button>
-                </div>
+            <h2 style="color: var(--gold);"><i class="fa-solid fa-sitemap"></i> Deploy New Course</h2>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="new-course-code" placeholder="Code (CS101)">
+                <input type="text" id="new-course-title" placeholder="Module Title">
+                <button class="btn-gold" onclick="saveCourse()">Deploy</button>
             </div>
         </div>
-
-        <div class="stats-row">
-            <div class="stat-card">
-                <div class="stat-title">Registered Users</div>
-                <div class="stat-val" id="stat-users" style="color: var(--gold);">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">Active Questions</div>
-                <div class="stat-val" id="stat-questions" style="color: var(--gold);">0</div>
-            </div>
-        </div>
-
         <div class="content-grid">
-            <div class="panel">
-                <h2>System Load & Traffic</h2>
-                <div class="chart-container">
-                    <canvas id="adminChart"></canvas>
-                </div>
-            </div>
-            <div class="panel">
-                <h2>Server Diagnostics</h2>
-                <div style="margin-top: 10px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 4px solid #4CAF50;">
-                    <strong>Database:</strong> Connected & Secured
-                </div>
-                <div style="margin-top: 10px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 4px solid #4CAF50;">
-                    <strong>Email Service:</strong> SMTP Active
-                </div>
-                <div style="margin-top: 10px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 4px solid #4CAF50;">
-                    <strong>File Storage:</strong> Writable
-                </div>
-            </div>
+            <div class="panel"><h2>Registered Users</h2><h1 id="stat-users" style="color:var(--gold);">0</h1></div>
         </div>
     </div>
 
-    <div id="view-users" class="view-section">
-        <div class="panel">
-            <h2>User Registry & Role Control</h2>
-            <div id="users-container" style="display: grid; gap: 10px;">Loading...</div>
-        </div>
-    </div>
+    <div id="view-users" class="view-section"><div class="panel"><h2>User Registry</h2><div id="users-container"></div></div></div>
 
     <div id="view-progress" class="view-section">
         <div class="panel">
-            <h2>Global Quiz Results & Analytics</h2>
-            <p style="color: var(--text-2); margin-bottom: 20px;">Monitor all student quiz attempts in real-time.</p>
-            <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px;">
-                <table style="width: 100%; text-align: left; border-collapse: collapse;">
-                    <thead>
-                    <tr style="border-bottom: 1px solid var(--border); color: var(--gold);">
-                        <th style="padding: 10px;">Student Name</th>
-                        <th style="padding: 10px;">Quiz ID</th>
-                        <th style="padding: 10px;">Score</th>
-                        <th style="padding: 10px;">Date Taken</th>
-                    </tr>
-                    </thead>
-                    <tbody id="quiz-results-table">
-                    <tr><td colspan="4" style="padding: 15px; text-align: center;">Loading student data...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+            <h2>Student Progression Analytics</h2>
+            <p style="color: var(--text-2); margin-bottom: 10px;">Skill points ranking across all registered students.</p>
+            <div class="chart-container" style="height: 400px;"><canvas id="adminProgressChart"></canvas></div>
         </div>
     </div>
-
-    <div id="view-resources" class="view-section">
-        <div class="content-grid">
-            <div class="panel">
-                <h2>Upload Global Material</h2>
-                <form id="uploadForm">
-                    <input type="text" id="r-title" placeholder="Document Title" required>
-                    <input type="text" id="r-course" placeholder="Target Course/Subject" required>
-                    <input type="file" id="r-file" required style="border:none; padding:0; background: transparent;">
-                    <button type="button" class="btn-gold" onclick="uploadFile()">Upload File</button>
-                </form>
-            </div>
-        </div>
-        <div class="panel" style="margin-top: 20px;">
-            <h2>Existing Resources</h2>
-            <div id="admin-resources-container" style="display: grid; gap: 10px;">Loading...</div>
-        </div>
-    </div>
-
-    <div id="view-mod" class="view-section">
-        <div class="content-grid">
-            <div class="panel">
-                <h2>Global Broadcast</h2>
-                <p style="font-size: 13px; color: var(--text-2); margin-bottom: 15px;">This message will appear as a banner on all Student and Teacher dashboards.</p>
-                <textarea id="b-msg" rows="3" placeholder="Type your announcement here..."></textarea>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn-gold" onclick="sendBroadcast()"><i class="fa-solid fa-bullhorn"></i> Broadcast</button>
-                    <button class="btn-action" style="background: var(--danger); color: white; border: none;" onclick="clearBroadcast()">Stop Broadcast</button>
-                </div>
-            </div>
-            <div class="panel">
-                <h2>Community Moderation</h2>
-                <div id="mod-questions" style="display: grid; gap: 10px; max-height: 300px; overflow-y: auto;">Loading questions...</div>
-            </div>
-        </div>
-    </div>
-
 </div>
 
 <script>
     const user = JSON.parse(localStorage.getItem('hive_user'));
     if (!user || user.role !== 'admin') window.location.href = "index.html";
 
-    document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/shapes/svg?seed=Admin`;
-
     function switchTab(tabId, element) {
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         if(element) element.classList.add('active');
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
         document.getElementById('view-' + tabId).classList.add('active');
-
-        if(tabId === 'system' || tabId === 'users' || tabId === 'mod') loadAdminData();
-        if(tabId === 'progress') loadQuizResults();
-        if(tabId === 'resources') fetchAdminResources();
+        if(tabId === 'system' || tabId === 'users' || tabId === 'progress') loadAdminData();
     }
 
-    // 🟢 FIX: ARCHITECT JS - SAVE DEPARTMENT
-    async function saveDept() {
-        const name = document.getElementById('new-dept-name').value;
-        if(!name) return alert("Please enter a department name.");
-
-        try {
-            const res = await fetch('/api/hive/admin/departments', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ name: name })
-            });
-            if(res.ok) {
-                alert("Department successfully registered.");
-                document.getElementById('new-dept-name').value = '';
-                loadAdminDepts(); // Refresh the dropdown
-            }
-        } catch (e) { alert("Network error."); }
-    }
-
-    // 🟢 FIX: ARCHITECT JS - SAVE COURSE
     async function saveCourse() {
-        const deptId = document.getElementById('dept-selector').value;
         const code = document.getElementById('new-course-code').value;
         const title = document.getElementById('new-course-title').value;
-
-        if(!deptId || !code || !title) return alert("Please complete all module fields.");
-
-        try {
-            const res = await fetch('/api/hive/admin/courses', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ deptId: deptId, courseCode: code, title: title })
-            });
-            if(res.ok) {
-                alert("Module deployed to department.");
-                document.getElementById('new-course-code').value = '';
-                document.getElementById('new-course-title').value = '';
-            }
-        } catch (e) { alert("Network error."); }
-    }
-
-    // 🟢 FIX: ARCHITECT JS - LOAD DEPARTMENTS INTO SELECTOR
-    async function loadAdminDepts() {
-        try {
-            const res = await fetch('/api/hive/departments');
-            const depts = await res.json();
-            const selector = document.getElementById('dept-selector');
-            selector.innerHTML = '<option value="">Select Department...</option>' +
-                depts.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
-        } catch (e) { console.error("Dept load failed"); }
+        if(!code || !title) return alert("Complete fields.");
+        await fetch('/api/hive/admin/courses', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ deptId: 1, courseCode: code, title: title }) });
+        alert("Course created!"); document.getElementById('new-course-code').value = ''; document.getElementById('new-course-title').value = '';
     }
 
     async function loadAdminData() {
-        try {
-            const uRes = await fetch('/api/admin/users');
-            const users = await uRes.json();
-            document.getElementById('stat-users').innerText = users.length;
+        const uRes = await fetch('/api/admin/users');
+        const users = await uRes.json();
+        document.getElementById('stat-users').innerText = users.length;
 
-            document.getElementById('users-container').innerHTML = users.map(u => `
-                <div class="item-card">
-                    <div><strong>${u.username}</strong><br><span style="font-size:12px; color:var(--text-2);">${u.email}</span></div>
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <select class="role-select" onchange="changeRole(${u.id}, this.value)">
-                            <option value="student" ${u.role === 'student' ? 'selected' : ''}>Student</option>
-                            <option value="teacher" ${u.role === 'teacher' ? 'selected' : ''}>Teacher</option>
-                            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-                        </select>
-                        ${u.role !== 'admin' ? `<button class="btn-action delete" onclick="deleteUser(${u.id})">Purge</button>` : ''}
-                    </div>
-                </div>
-            `).join('');
+        document.getElementById('users-container').innerHTML = users.map(u => `
+            <div class="item-card">
+                <div><strong>${u.username}</strong> (${u.role})<br><span style="font-size:12px;">Points: ${u.points}</span></div>
+            </div>
+        `).join('');
 
-            const qRes = await fetch('/api/hive/questions');
-            const questions = await qRes.json();
-            document.getElementById('stat-questions').innerText = questions.length;
+        // Draw Progression Chart
+        const students = users.filter(u => u.role === 'student');
+        const labels = students.map(s => s.username);
+        const data = students.map(s => s.points);
 
-            document.getElementById('mod-questions').innerHTML = questions.map(q => `
-                <div class="item-card" style="padding: 10px;">
-                    <div><strong style="font-size:14px;">${q.title}</strong><br><span style="font-size:11px; color:var(--text-2);">By: ${q.authorName || 'User'}</span></div>
-                    <button class="btn-action delete" style="padding: 5px 10px; font-size: 12px;" onclick="deleteQuestion(${q.id})">Wipe</button>
-                </div>
-            `).join('');
-
-            const ctx = document.getElementById('adminChart').getContext('2d');
-            if (!window.adminChartInstance) {
-                window.adminChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                        datasets: [{ label: 'Traffic', data: [12, 19, 15, 25, 22, 30, 28], backgroundColor: '#4CAF50', borderRadius: 4 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } } }
-                });
-            }
-        } catch(e) { console.error(e); }
+        const ctx = document.getElementById('adminProgressChart').getContext('2d');
+        if (window.adminChart) window.adminChart.destroy();
+        window.adminChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ label: 'Skill Points', data: data, backgroundColor: '#D4880A' }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
     }
 
-    async function loadQuizResults() {
-        try {
-            const res = await fetch('/api/admin/quiz-results');
-            const results = await res.json();
-            document.getElementById('quiz-results-table').innerHTML = results.map(r => `
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <td style="padding: 12px 10px; font-weight: bold;">${r.student_name}</td>
-                    <td style="padding: 12px 10px;">#${r.quiz_id}</td>
-                    <td style="padding: 12px 10px; color: ${r.score === r.total ? '#4CAF50' : 'var(--gold)'};">${r.score} / ${r.total}</td>
-                    <td style="padding: 12px 10px; font-size: 12px; color: var(--text-2);">${new Date(r.taken_at).toLocaleString()}</td>
-                </tr>
-            `).join('') || `<tr><td colspan="4" style="padding: 15px; text-align: center;">No attempts recorded.</td></tr>`;
-        } catch(e) {}
-    }
-
-    async function fetchAdminResources() {
-        try {
-            const res = await fetch('/api/hive/resources');
-            const data = await res.json();
-            document.getElementById('admin-resources-container').innerHTML = data.map(r => `
-                <div class="item-card">
-                    <div><strong>${r.title}</strong><br><span style="font-size:12px;">Course: ${r.course} | By: ${r.postedBy}</span></div>
-                    <button class="btn-action delete" onclick="deleteAdminResource(${r.id})">Purge</button>
-                </div>
-            `).join('') || "No resources found.";
-        } catch(e) {}
-    }
-
-    async function deleteAdminResource(id) {
-        if(confirm("Permanently delete this resource?")) {
-            await fetch(`/api/hive/resources/${id}`, { method: 'DELETE' });
-            fetchAdminResources();
-        }
-    }
-
-    async function uploadFile() {
-        const fileInput = document.getElementById('r-file');
-        if(!fileInput.files.length) return alert("Select a file.");
-
-        const btn = document.querySelector('button[onclick="uploadFile()"]');
-        btn.innerText = "Uploading...";
-
-        const formData = new FormData();
-        formData.append("file", fileInput.files[0]);
-        formData.append("title", document.getElementById('r-title').value);
-        formData.append("course", document.getElementById('r-course').value);
-        formData.append("postedBy", "System Admin");
-
-        try {
-            const res = await fetch('/api/hive/resources/upload', { method: 'POST', body: formData });
-            if(res.ok) {
-                alert("File uploaded globally!");
-                document.getElementById('uploadForm').reset();
-                fetchAdminResources();
-            } else { alert("Upload failed."); }
-        } catch(e) { alert("Server error."); }
-
-        btn.innerText = "Upload File";
-    }
-
-    async function changeRole(userId, newRole) { if(confirm(`Update role?`)) { await fetch(`/api/admin/users/${userId}/role`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: newRole }) }); loadAdminData(); } }
-    async function deleteUser(id) { if(confirm("Permanently purge user?")) { await fetch(`/api/admin/users/${id}`, { method: 'DELETE' }); loadAdminData(); } }
-    async function deleteQuestion(id) { if(confirm("Wipe this post?")) { await fetch(`/api/admin/questions/${id}`, { method: 'DELETE' }); loadAdminData(); } }
-    async function sendBroadcast() { const msg = document.getElementById('b-msg').value; if(!msg) return; await fetch('/api/admin/broadcast', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg, postedBy: "SYSTEM ADMIN" }) }); alert("Broadcast live!"); document.getElementById('b-msg').value = ''; }
-    async function clearBroadcast() { if(confirm("Stop banner?")) { await fetch('/api/admin/broadcast/clear', { method: 'DELETE' }); alert("Cleared."); } }
     function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
-
     loadAdminData();
-    loadAdminDepts(); // 🟢 Ensure Architect dropdown loads on startup
-
-    function setTheme(themeName) { document.body.classList.remove('light-mode', 'midnight-mode', 'cyber-mode', 'aurora-mode'); if (themeName !== 'hive') { document.body.classList.add(themeName + '-mode'); } localStorage.setItem('hive_theme', themeName); }
-    function initTheme() { const savedTheme = localStorage.getItem('hive_theme'); if (savedTheme) setTheme(savedTheme); }
-    initTheme();
 </script>
-
 </body>
 </html>
