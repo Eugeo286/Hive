@@ -132,7 +132,7 @@ public class AuthController {
 
         // The Sender (Must be your registered Brevo email)
         Map<String, Object> sender = new HashMap<>();
-        sender.put("email", "nanamensah571@gmail.com");
+        sender.put("email", "oeugene286@gmail.com");
         sender.put("name", "The Hive");
 
         // The Receiver
