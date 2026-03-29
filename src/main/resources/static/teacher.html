@@ -13,6 +13,54 @@
   .btn-gold { background: linear-gradient(135deg, var(--primary), #1A5276); }
   .badge { background: linear-gradient(135deg, var(--primary), #1A5276); }
 </style>
+  <style>
+    /* =================================================================
+       OPTION 3: FUTURISTIC LEARNING (DEFAULT DARK MODE) - BRIGHTER
+       ================================================================= */
+    body {
+        /* Slightly brighter deep blue base instead of near-black */
+        background-color: #081229 !important;
+
+        /* Increased opacity for much brighter glowing corners and grid */
+        background-image:
+            radial-gradient(circle at 15% 50%, rgba(0, 242, 254, 0.35), transparent 40%),
+            radial-gradient(circle at 85% 30%, rgba(255, 0, 222, 0.35), transparent 40%),
+            linear-gradient(rgba(0, 242, 254, 0.12) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 242, 254, 0.12) 1px, transparent 1px) !important;
+        background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px !important;
+        background-attachment: fixed !important;
+        transition: all 0.5s ease-in-out;
+    }
+
+    /* =================================================================
+       OPTION 1: MODERN GRADIENT (LIGHT MODE) - BRIGHTER
+       Activates when the body has class="light-mode"
+       ================================================================= */
+    body.light-mode {
+        /* Pure white base to make colors pop */
+        background-color: #ffffff !important;
+
+        /* Increased opacity and spread for much more vibrant colors */
+        background-image:
+            radial-gradient(circle at 0% 0%, rgba(79, 172, 254, 0.5) 0%, transparent 70%),
+            radial-gradient(circle at 100% 0%, rgba(0, 242, 254, 0.45) 0%, transparent 60%),
+            radial-gradient(circle at 100% 100%, rgba(255, 0, 222, 0.35) 0%, transparent 70%) !important;
+        background-size: 100% 100% !important;
+    }
+
+    /* =================================================================
+       PROTECTING YOUR CONTAINERS
+       ================================================================= */
+    .command-center-container,
+    .reset-password-container,
+    .login-container,
+    .overseer-panel {
+        background: rgba(25, 18, 12, 0.95) !important;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.5) !important;
+    }
+  </style>
 </head>
 <body class="light-mode">
 <div class="light-soft-pattern">
