@@ -60,7 +60,7 @@
 <div class="hive-watermark">HIVE</div>
 
 <div class="sidebar" id="sidebar">
-  <div class="theme-switcher" style="padding: 20px; border-top: 1px solid var(--border); margin-top: 20px;">
+  <div class="theme-switcher" style="padding: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px;">
     <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase;">Theme</p>
     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
       <button onclick="setTheme('light')" class="theme-btn" title="Light Mode" style="background:#fff; border:1px solid #ccc; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
@@ -70,10 +70,10 @@
       <button onclick="setTheme('aurora')" class="theme-btn" title="Aurora" style="background: linear-gradient(135deg, #10B981, #06B6D4); border:none; width:25px; height:25px; border-radius:50%; cursor:pointer; box-shadow: 0 0 10px rgba(16,185,129,0.5);"></button>
     </div>
   </div>
-  </div>
-  <div style="display: flex; align-items: center; margin-bottom: 40px;">
+
+  <div style="display: flex; align-items: center; margin-bottom: 40px; padding: 0 10px;">
     <div class="sb-hex"><i class="fa-solid fa-chalkboard-user"></i></div>
-    <div class="brand-title">Faculty</div>
+    <div class="brand-title" style="margin-left: 15px;">Faculty</div>
   </div>
 
   <div class="nav-item active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-house"></i> Overview</div>
@@ -82,7 +82,7 @@
   <div class="nav-item" onclick="switchTab('sessions', this)"><i class="fa-solid fa-video"></i> Video Sessions</div>
   <div class="nav-item" onclick="switchTab('quizzes', this)"><i class="fa-solid fa-stopwatch"></i> Create Quiz</div>
 
-  <div class="nav-item" style="margin-top: auto; color: var(--danger);" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
+  <div class="nav-item" style="margin-top: auto; color: var(--danger); background: rgba(255, 76, 76, 0.1);" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
 </div>
 
 <div class="main">
@@ -149,6 +149,11 @@
         <div id="books-container" style="display: grid; gap: 10px;">Results appear here...</div>
       </div>
     </div>
+
+    <div class="panel" style="margin-top: 20px;">
+      <h2>My Uploaded Materials</h2>
+      <div id="teacher-resources-container" style="display: grid; gap: 10px;">Loading...</div>
+    </div>
   </div>
 
   <div id="view-assignments" class="view-section">
@@ -160,6 +165,11 @@
       <input type="datetime-local" id="a-deadline" style="color: black;">
       <input type="text" id="a-key" placeholder="Answer Key">
       <button class="btn-gold" onclick="postAssignment()">Deploy Assignment</button>
+    </div>
+
+    <div class="panel" style="margin-top: 20px;">
+      <h2>Deployed Assignments</h2>
+      <div id="teacher-assignments-container" style="display: grid; gap: 10px;">Loading...</div>
     </div>
   </div>
 
@@ -213,6 +223,11 @@
         <button class="btn-gold" onclick="deployQuiz()"><i class="fa-solid fa-paper-plane"></i> Deploy Quiz to Students</button>
       </div>
     </div>
+
+    <div class="panel" style="margin-top: 20px;">
+      <h2>Active Quizzes</h2>
+      <div id="teacher-quizzes-container" style="display: grid; gap: 10px;">Loading...</div>
+    </div>
   </div>
 
 </div>
@@ -227,173 +242,203 @@
   function toggleSidebar() { document.getElementById('sidebar').classList.toggle('mobile-open'); }
 
   function switchTab(tabId, element) {
-      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      if(element) element.classList.add('active');
-      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-      document.getElementById('view-' + tabId).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  if(element) element.classList.add('active');
+  document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + tabId).classList.add('active');
 
-      if(tabId === 'dashboard') loadDashboard();
-      if(tabId === 'sessions') fetchSessions();
+  if(tabId === 'dashboard') loadDashboard();
+  if(tabId === 'resources') fetchTeacherResources();
+  if(tabId === 'assignments') fetchTeacherAssignments();
+  if(tabId === 'sessions') fetchSessions();
+  if(tabId === 'quizzes') fetchTeacherQuizzes();
   }
 
   async function checkBroadcast() {
-      try { const res = await fetch('/api/admin/broadcast/latest'); const data = await res.json();
-          if(data && data.message) { document.getElementById('global-banner').style.display = 'block'; document.getElementById('banner-text').innerText = data.message; }
-      } catch(e) { }
+  try { const res = await fetch('/api/admin/broadcast/latest'); const data = await res.json();
+  if(data && data.message) { document.getElementById('global-banner').style.display = 'block'; document.getElementById('banner-text').innerText = data.message; }
+  } catch(e) { }
   }
 
-  // --- ENHANCED DASHBOARD LOGIC ---
   async function loadDashboard() {
-      // 1. Existing Urgent logic
-      try {
-          const res = await fetch('/api/hive/questions/urgent'); const data = await res.json();
-          document.getElementById('stat-urgent').innerText = data.length;
-          document.getElementById('urgent-container').innerHTML = data.map(q => `
-              <div class="item-card" style="border-left: 4px solid var(--danger);">
-                  <div><strong>${q.title}</strong><br><span style="font-size:12px;">${q.subject}</span></div>
-                  <button class="btn-action delete" onclick="fetch('/api/hive/questions/${q.id}', {method:'DELETE'}).then(()=>loadDashboard())">Clear</button>
-              </div>
-          `).join('') || "No urgent questions.";
-      } catch(e) {}
+  try {
+  const res = await fetch('/api/hive/questions/urgent'); const data = await res.json();
+  document.getElementById('stat-urgent').innerText = data.length;
+  document.getElementById('urgent-container').innerHTML = data.map(q => `
+  <div class="item-card" style="border-left: 4px solid var(--danger);">
+    <div><strong>${q.title}</strong><br><span style="font-size:12px;">${q.subject}</span></div>
+    <button class="btn-action delete" onclick="fetch('/api/hive/questions/${q.id}', {method:'DELETE'}).then(()=>loadDashboard())">Clear</button>
+  </div>
+  `).join('') || "No urgent questions.";
+  } catch(e) {}
 
-      // 2. Chart.js Implementation (Engagement by Subject)
-      try {
-          const res = await fetch('/api/hive/stats/subjects');
-          const data = await res.json();
+  try {
+  const res = await fetch('/api/hive/stats/subjects');
+  const data = await res.json();
+  document.getElementById('stat-engagement').innerText = Object.values(data).reduce((a,b)=>a+b, 0);
 
-          let total = Object.values(data).reduce((a,b)=>a+b, 0);
-          document.getElementById('stat-engagement').innerText = total;
+  const ctx = document.getElementById('teacherChart').getContext('2d');
+  if (window.teacherChartInstance) window.teacherChartInstance.destroy();
+  window.teacherChartInstance = new Chart(ctx, {
+  type: 'doughnut', data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#2980B9', '#D4880A', '#4CAF50', '#FF4C4C', '#9B59B6'], borderWidth: 0 }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#D1BFA5' } } } }
+  });
+  } catch(e) {}
 
-          const ctx = document.getElementById('teacherChart').getContext('2d');
-          if (window.teacherChartInstance) window.teacherChartInstance.destroy();
-          window.teacherChartInstance = new Chart(ctx, {
-              type: 'doughnut',
-              data: {
-                  labels: Object.keys(data),
-                  datasets: [{
-                      data: Object.values(data),
-                      backgroundColor: ['#2980B9', '#D4880A', '#4CAF50', '#FF4C4C', '#9B59B6'],
-                      borderWidth: 0
-                  }]
-              },
-              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#D1BFA5' } } } }
-          });
-      } catch(e) {}
-
-      // 3. Needs Grading Widget
-      try {
-          const res = await fetch('/api/hive/assignments/all');
-          const assignments = await res.json();
-          const recent = assignments.reverse().slice(0, 4); // Get 4 newest
-
-          document.getElementById('dash-grading').innerHTML = recent.map(a => `
-              <div class="feed-item">
-                  <div class="feed-time" style="color: var(--primary);">Deployed: ${new Date(a.deadline).toLocaleDateString()}</div>
-                  <div class="feed-text"><strong>${a.title}</strong> (${a.course})</div>
-                  <button class="btn-action" style="padding: 4px 10px; font-size: 11px; margin-top: 5px; border-color: var(--primary); color: var(--primary);" onclick="switchTab('assignments', document.querySelectorAll('.nav-item')[2])">Review Submissions</button>
-              </div>
-          `).join('') || "<div class='feed-item'><div class='feed-text'>No recent assignments to grade.</div></div>";
-      } catch(e) {}
+  try {
+  const res = await fetch('/api/hive/assignments/all');
+  const assignments = await res.json();
+  const recent = assignments.reverse().slice(0, 4);
+  document.getElementById('dash-grading').innerHTML = recent.map(a => `
+  <div class="feed-item"><div class="feed-time" style="color: var(--primary);">Deployed: ${new Date(a.deadline).toLocaleDateString()}</div><div class="feed-text"><strong>${a.title}</strong> (${a.course})</div></div>
+  `).join('') || "<div class='feed-item'><div class='feed-text'>No recent assignments.</div></div>";
+  } catch(e) {}
   }
 
-  // --- ALL OTHER EXISTING LOGIC ---
+  // --- RESOURCES LIST LOGIC ---
+  async function fetchTeacherResources() {
+  try {
+  const res = await fetch('/api/hive/resources');
+  const data = await res.json();
+  const myFiles = data.filter(r => r.postedBy === user.name);
+  document.getElementById('teacher-resources-container').innerHTML = myFiles.map(r => `
+  <div class="item-card">
+    <div><strong><i class="fa-solid fa-file"></i> ${r.title}</strong><br><span style="font-size:12px;">Course: ${r.course}</span></div>
+    <button class="btn-action delete" onclick="deleteTeacherResource(${r.id})">Delete</button>
+  </div>
+  `).join('') || "You haven't uploaded any materials yet.";
+  } catch(e) { }
+  }
+  async function deleteTeacherResource(id) {
+  if(confirm("Delete this file?")) { await fetch(`/api/hive/resources/${id}`, { method: 'DELETE' }); fetchTeacherResources(); }
+  }
+
   async function uploadResource() {
-      const fileInput = document.getElementById('r-file'); if(!fileInput.files.length) return alert("Select a file.");
-      const formData = new FormData(); formData.append("file", fileInput.files[0]); formData.append("title", document.getElementById('r-title').value); formData.append("course", document.getElementById('r-course').value); formData.append("postedBy", user.name);
-      await fetch('/api/hive/resources/upload', { method: 'POST', body: formData }); alert("File uploaded!"); document.getElementById('uploadForm').reset();
+  const fileInput = document.getElementById('r-file'); if(!fileInput.files.length) return alert("Select a file.");
+  const btn = document.querySelector('button[onclick="uploadResource()"]'); btn.innerText = "Uploading...";
+
+  const formData = new FormData(); formData.append("file", fileInput.files[0]); formData.append("title", document.getElementById('r-title').value); formData.append("course", document.getElementById('r-course').value); formData.append("postedBy", user.name);
+
+  try {
+  await fetch('/api/hive/resources/upload', { method: 'POST', body: formData });
+  alert("File uploaded!");
+  document.getElementById('uploadForm').reset();
+  fetchTeacherResources(); // Refresh the list!
+  } catch(e) { alert("Upload failed"); }
+  btn.innerText = "Upload File";
   }
 
   async function searchBooks() {
-      const query = document.getElementById('book-search').value; if(!query) return;
-      document.getElementById('books-container').innerHTML = "Searching...";
-      try {
-          const data = await (await fetch(`/api/hive/books/${query}`)).json();
-          document.getElementById('books-container').innerHTML = data.docs.map(book => `
-              <div class="item-card" style="flex-direction:column; align-items:flex-start;">
-                  <strong>${book.title}</strong><a href="https://openlibrary.org${book.key}" target="_blank" class="btn-action" style="margin-top:10px;">View Book</a>
-              </div>
-          `).join('') || "No books found.";
-      } catch(e) { document.getElementById('books-container').innerHTML = "Error."; }
+  const query = document.getElementById('book-search').value; if(!query) return;
+  document.getElementById('books-container').innerHTML = "Searching...";
+  try {
+  const data = await (await fetch(`/api/hive/books/${query}`)).json();
+  document.getElementById('books-container').innerHTML = data.docs.map(book => `
+  <div class="item-card" style="flex-direction:column; align-items:flex-start;"><strong>${book.title}</strong><a href="https://openlibrary.org${book.key}" target="_blank" class="btn-action" style="margin-top:10px;">View Book</a></div>
+  `).join('') || "No books found.";
+  } catch(e) { document.getElementById('books-container').innerHTML = "Error."; }
+  }
+
+  // --- ASSIGNMENTS LIST LOGIC ---
+  async function fetchTeacherAssignments() {
+  try {
+  const res = await fetch('/api/hive/assignments/all');
+  const data = await res.json();
+  const myAssignments = data.filter(a => a.teacherName === user.name);
+  document.getElementById('teacher-assignments-container').innerHTML = myAssignments.map(a => `
+  <div class="item-card">
+    <div><strong>${a.title}</strong><br><span style="font-size:12px;">Course: ${a.course} | Due: ${new Date(a.deadline).toLocaleString()}</span></div>
+  </div>
+  `).join('') || "No assignments deployed.";
+  } catch(e) {}
   }
 
   async function postAssignment() {
-      const payload = { title: document.getElementById('a-title').value, course: document.getElementById('a-course').value, description: document.getElementById('a-desc').value, deadline: document.getElementById('a-deadline').value, answerText: document.getElementById('a-key').value, teacherName: user.name };
-      const res = await fetch('/api/hive/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if(res.ok) { alert("Deployed!"); ['a-title','a-course','a-desc','a-deadline','a-key'].forEach(id => document.getElementById(id).value = ''); loadDashboard(); }
+  const payload = { title: document.getElementById('a-title').value, course: document.getElementById('a-course').value, description: document.getElementById('a-desc').value, deadline: document.getElementById('a-deadline').value, answerText: document.getElementById('a-key').value, teacherName: user.name };
+  const res = await fetch('/api/hive/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  if(res.ok) {
+  alert("Deployed!");
+  ['a-title','a-course','a-desc','a-deadline','a-key'].forEach(id => document.getElementById(id).value = '');
+  fetchTeacherAssignments(); // Refresh the list!
+  }
   }
 
   async function scheduleSession() {
-      const payload = { topic: document.getElementById('v-topic').value, subject: document.getElementById('v-subject').value, scheduledTime: document.getElementById('v-time').value, meetingLink: document.getElementById('v-link').value, host: user.name };
-      const res = await fetch('/api/hive/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if(res.ok) { alert("Scheduled!"); ['v-topic','v-subject','v-time','v-link'].forEach(id => document.getElementById(id).value = ''); fetchSessions(); }
+  const payload = { topic: document.getElementById('v-topic').value, subject: document.getElementById('v-subject').value, scheduledTime: document.getElementById('v-time').value, meetingLink: document.getElementById('v-link').value, host: user.name };
+  const res = await fetch('/api/hive/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  if(res.ok) { alert("Scheduled!"); ['v-topic','v-subject','v-time','v-link'].forEach(id => document.getElementById(id).value = ''); fetchSessions(); }
   }
 
   async function fetchSessions() {
-      try {
-          const data = await (await fetch('/api/hive/sessions')).json();
-          document.getElementById('sessions-container').innerHTML = data.map(s => `<div class="item-card"><div><strong>${s.topic}</strong></div><button class="btn-action delete" onclick="deleteSession(${s.id})">Cancel</button></div>`).join('') || "No active sessions.";
-      } catch(e) {}
+  try {
+  const data = await (await fetch('/api/hive/sessions')).json();
+  document.getElementById('sessions-container').innerHTML = data.map(s => `<div class="item-card"><div><strong>${s.topic}</strong></div><button class="btn-action delete" onclick="deleteSession(${s.id})">Cancel</button></div>`).join('') || "No active sessions.";
+  } catch(e) {}
   }
   async function deleteSession(id) { await fetch(`/api/hive/sessions/${id}`, { method: 'DELETE' }); fetchSessions(); }
 
+  // --- QUIZZES LIST LOGIC ---
+  async function fetchTeacherQuizzes() {
+  try {
+  const res = await fetch('/api/quizzes/all');
+  const data = await res.json();
+  const myQuizzes = data.filter(q => q.teacherName === user.name);
+  document.getElementById('teacher-quizzes-container').innerHTML = myQuizzes.map(q => `
+  <div class="item-card">
+    <div><strong>${q.title}</strong><br><span style="font-size:12px;">Course: ${q.subject} | Duration: ${q.durationMinutes}m</span></div>
+  </div>
+  `).join('') || "No quizzes deployed.";
+  } catch(e) {}
+  }
+
   let questionCount = 1;
   function addQuestionBlock() {
-      questionCount++;
-      const container = document.getElementById('qz-questions-list');
-      const div = document.createElement('div');
-      div.className = "item-card quiz-question-card";
-      div.style.cssText = "flex-direction: column; align-items: stretch; background: rgba(0,0,0,0.2);";
-      div.innerHTML = `
-          <h3 style="font-size:14px; margin-bottom:10px; color: var(--text-2);">Question ${questionCount}</h3>
-          <input type="text" class="q-text" placeholder="Question Text" style="background:rgba(0,0,0,0.4);">
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-              <input type="text" class="q-optA" placeholder="Option A">
-              <input type="text" class="q-optB" placeholder="Option B">
-              <input type="text" class="q-optC" placeholder="Option C">
-              <input type="text" class="q-optD" placeholder="Option D">
-          </div>
-          <select class="q-correct" style="width:200px;">
-              <option value="A">Correct Answer: A</option><option value="B">Correct Answer: B</option><option value="C">Correct Answer: C</option><option value="D">Correct Answer: D</option>
-          </select>
-      `;
-      container.appendChild(div);
+  questionCount++;
+  const container = document.getElementById('qz-questions-list');
+  const div = document.createElement('div');
+  div.className = "item-card quiz-question-card";
+  div.style.cssText = "flex-direction: column; align-items: stretch; background: rgba(0,0,0,0.2);";
+  div.innerHTML = `
+  <h3 style="font-size:14px; margin-bottom:10px; color: var(--text-2);">Question ${questionCount}</h3>
+  <input type="text" class="q-text" placeholder="Question Text" style="background:rgba(0,0,0,0.4);">
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+    <input type="text" class="q-optA" placeholder="Option A">
+    <input type="text" class="q-optB" placeholder="Option B">
+    <input type="text" class="q-optC" placeholder="Option C">
+    <input type="text" class="q-optD" placeholder="Option D">
+  </div>
+  <select class="q-correct" style="width:200px;"><option value="A">Correct Answer: A</option><option value="B">Correct Answer: B</option><option value="C">Correct Answer: C</option><option value="D">Correct Answer: D</option></select>
+  `;
+  container.appendChild(div);
   }
 
   async function deployQuiz() {
-      const cards = document.querySelectorAll('.quiz-question-card');
-      const payload = { title: document.getElementById('qz-title').value, subject: document.getElementById('qz-subject').value, durationMinutes: parseInt(document.getElementById('qz-duration').value) || 10, teacherName: user.name, questions: [] };
-      let valid = true;
-      cards.forEach(card => {
-          const qText = card.querySelector('.q-text').value; if(!qText) valid = false;
-          payload.questions.push({ questionText: qText, optA: card.querySelector('.q-optA').value, optB: card.querySelector('.q-optB').value, optC: card.querySelector('.q-optC').value, optD: card.querySelector('.q-optD').value, correctOpt: card.querySelector('.q-correct').value });
-      });
-      if(!payload.title || !payload.subject || !valid) return alert("Please fill in the Quiz Title, Subject, and all Question texts.");
+  const cards = document.querySelectorAll('.quiz-question-card');
+  const payload = { title: document.getElementById('qz-title').value, subject: document.getElementById('qz-subject').value, durationMinutes: parseInt(document.getElementById('qz-duration').value) || 10, teacherName: user.name, questions: [] };
+  let valid = true;
+  cards.forEach(card => {
+  const qText = card.querySelector('.q-text').value; if(!qText) valid = false;
+  payload.questions.push({ questionText: qText, optA: card.querySelector('.q-optA').value, optB: card.querySelector('.q-optB').value, optC: card.querySelector('.q-optC').value, optD: card.querySelector('.q-optD').value, correctOpt: card.querySelector('.q-correct').value });
+  });
+  if(!payload.title || !payload.subject || !valid) return alert("Please fill in the Quiz Title, Subject, and all Question texts.");
 
-      try {
-          const res = await fetch('/api/quizzes/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-          if(res.ok) { alert("Quiz Deployed!"); document.getElementById('qz-title').value = ''; document.getElementById('qz-subject').value = ''; document.getElementById('qz-duration').value = ''; cards.forEach(c => c.querySelectorAll('input').forEach(i => i.value = '')); }
-          else { alert("Server error."); }
-      } catch (e) { alert("Cannot connect to server."); }
+  try {
+  const res = await fetch('/api/quizzes/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  if(res.ok) {
+  alert("Quiz Deployed!");
+  document.getElementById('qz-title').value = ''; document.getElementById('qz-subject').value = ''; document.getElementById('qz-duration').value = ''; cards.forEach(c => c.querySelectorAll('input').forEach(i => i.value = ''));
+  fetchTeacherQuizzes(); // Refresh the list!
+  }
+  else { alert("Server error."); }
+  } catch (e) { alert("Cannot connect to server."); }
   }
 
   function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
 
-  // Init
   loadDashboard(); checkBroadcast();
-
-// Themes
-  function setTheme(themeName) {
-      // 1. Remove ALL possible theme classes
-      document.body.classList.remove('light-mode', 'midnight-mode', 'cyber-mode', 'aurora-mode');
-
-      // 2. Add the selected theme (unless it is the default 'hive' theme)
-      if (themeName !== 'hive') {
-          document.body.classList.add(themeName + '-mode');
-      }
-
-      // 3. Save preference
-      localStorage.setItem('hive_theme', themeName);
-  }
+  function setTheme(themeName) { document.body.classList.remove('light-mode', 'midnight-mode', 'cyber-mode', 'aurora-mode'); if (themeName !== 'hive') { document.body.classList.add(themeName + '-mode'); } localStorage.setItem('hive_theme', themeName); }
+  function initTheme() { const savedTheme = localStorage.getItem('hive_theme'); if (savedTheme) setTheme(savedTheme); }
+  initTheme();
 </script>
 </body>
 </html>

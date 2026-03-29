@@ -191,7 +191,6 @@
     const user = JSON.parse(localStorage.getItem('hive_user'));
     if (!user || user.role !== 'admin') window.location.href = "index.html";
 
-    // Set Admin avatar
     document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/shapes/svg?seed=Admin`;
 
     function switchTab(tabId, element) {
@@ -202,6 +201,7 @@
 
         if(tabId === 'system' || tabId === 'users' || tabId === 'mod') loadAdminData();
         if(tabId === 'progress') loadQuizResults();
+        if(tabId === 'resources') fetchAdminResources(); // New trigger added
     }
 
     async function loadAdminData() {
@@ -235,14 +235,13 @@
                 </div>
             `).join('');
 
-            // Render System Traffic Chart
             const ctx = document.getElementById('adminChart').getContext('2d');
             if (!window.adminChartInstance) {
                 window.adminChartInstance = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                        datasets: [{ label: 'Traffic / Active Connections', data: [12, 19, 15, 25, 22, 30, 28], backgroundColor: '#4CAF50', borderRadius: 4 }]
+                        datasets: [{ label: 'Traffic', data: [12, 19, 15, 25, 22, 30, 28], backgroundColor: '#4CAF50', borderRadius: 4 }]
                     },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } } }
                 });
@@ -261,43 +260,68 @@
                     <td style="padding: 12px 10px; color: ${r.score === r.total ? '#4CAF50' : 'var(--gold)'};">${r.score} / ${r.total}</td>
                     <td style="padding: 12px 10px; font-size: 12px; color: var(--text-2);">${new Date(r.taken_at).toLocaleString()}</td>
                 </tr>
-            `).join('') || `<tr><td colspan="4" style="padding: 15px; text-align: center;">No quiz attempts recorded yet.</td></tr>`;
-        } catch(e) {
-            document.getElementById('quiz-results-table').innerHTML = `<tr><td colspan="4" style="padding: 15px; text-align: center; color: var(--danger);">Failed to load results.</td></tr>`;
+            `).join('') || `<tr><td colspan="4" style="padding: 15px; text-align: center;">No attempts recorded.</td></tr>`;
+        } catch(e) {}
+    }
+
+    // THE MISSING UPLOAD AND RESOURCE LOGIC
+    async function fetchAdminResources() {
+        try {
+            const res = await fetch('/api/hive/resources');
+            const data = await res.json();
+            document.getElementById('admin-resources-container').innerHTML = data.map(r => `
+                <div class="item-card">
+                    <div><strong>${r.title}</strong><br><span style="font-size:12px;">Course: ${r.course} | By: ${r.postedBy}</span></div>
+                    <button class="btn-action delete" onclick="deleteAdminResource(${r.id})">Purge</button>
+                </div>
+            `).join('') || "No resources found.";
+        } catch(e) {}
+    }
+
+    async function deleteAdminResource(id) {
+        if(confirm("Permanently delete this resource?")) {
+            await fetch(`/api/hive/resources/${id}`, { method: 'DELETE' });
+            fetchAdminResources();
         }
     }
 
-    async function changeRole(userId, newRole) {
-        if(confirm(`Update role to ${newRole.toUpperCase()}?`)) { await fetch(`/api/admin/users/${userId}/role`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: newRole }) }); alert("Role updated."); loadAdminData(); } else { loadAdminData(); }
+    async function uploadFile() {
+        const fileInput = document.getElementById('r-file');
+        if(!fileInput.files.length) return alert("Select a file.");
+
+        // Visual loading state
+        const btn = document.querySelector('button[onclick="uploadFile()"]');
+        btn.innerText = "Uploading...";
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("title", document.getElementById('r-title').value);
+        formData.append("course", document.getElementById('r-course').value);
+        formData.append("postedBy", "System Admin");
+
+        try {
+            const res = await fetch('/api/hive/resources/upload', { method: 'POST', body: formData });
+            if(res.ok) {
+                alert("File uploaded globally!");
+                document.getElementById('uploadForm').reset();
+                fetchAdminResources();
+            } else { alert("Upload failed."); }
+        } catch(e) { alert("Server error."); }
+
+        btn.innerText = "Upload File";
     }
+
+    async function changeRole(userId, newRole) { if(confirm(`Update role?`)) { await fetch(`/api/admin/users/${userId}/role`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: newRole }) }); loadAdminData(); } }
     async function deleteUser(id) { if(confirm("Permanently purge user?")) { await fetch(`/api/admin/users/${id}`, { method: 'DELETE' }); loadAdminData(); } }
-    async function deleteQuestion(id) { if(confirm("Wipe this post from the server?")) { await fetch(`/api/admin/questions/${id}`, { method: 'DELETE' }); loadAdminData(); } }
-
-    async function sendBroadcast() {
-        const msg = document.getElementById('b-msg').value; if(!msg) return alert("Please enter a message.");
-        await fetch('/api/admin/broadcast', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg, postedBy: "SYSTEM ADMIN" }) }); alert("Broadcast live!"); document.getElementById('b-msg').value = '';
-    }
-
-    async function clearBroadcast() { if(confirm("Stop the current banner?")) { await fetch('/api/admin/broadcast/clear', { method: 'DELETE' }); alert("Broadcasts cleared."); } }
-
+    async function deleteQuestion(id) { if(confirm("Wipe this post?")) { await fetch(`/api/admin/questions/${id}`, { method: 'DELETE' }); loadAdminData(); } }
+    async function sendBroadcast() { const msg = document.getElementById('b-msg').value; if(!msg) return; await fetch('/api/admin/broadcast', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg, postedBy: "SYSTEM ADMIN" }) }); alert("Broadcast live!"); document.getElementById('b-msg').value = ''; }
+    async function clearBroadcast() { if(confirm("Stop banner?")) { await fetch('/api/admin/broadcast/clear', { method: 'DELETE' }); alert("Cleared."); } }
     function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
 
-    // Init
     loadAdminData();
-
- // Themes
-  function setTheme(themeName) {
-      // 1. Remove ALL possible theme classes
-      document.body.classList.remove('light-mode', 'midnight-mode', 'cyber-mode', 'aurora-mode');
-
-      // 2. Add the selected theme (unless it is the default 'hive' theme)
-      if (themeName !== 'hive') {
-          document.body.classList.add(themeName + '-mode');
-      }
-
-      // 3. Save preference
-      localStorage.setItem('hive_theme', themeName);
-  }
+    function setTheme(themeName) { document.body.classList.remove('light-mode', 'midnight-mode', 'cyber-mode', 'aurora-mode'); if (themeName !== 'hive') { document.body.classList.add(themeName + '-mode'); } localStorage.setItem('hive_theme', themeName); }
+    function initTheme() { const savedTheme = localStorage.getItem('hive_theme'); if (savedTheme) setTheme(savedTheme); }
+    initTheme();
 </script>
 
 </body>

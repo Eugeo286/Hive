@@ -10,7 +10,6 @@ import java.net.URI;
 import java.net.http.*;
 import java.nio.file.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/hive")
@@ -46,31 +45,26 @@ public class HiveController {
         res.put("email",  u.getEmail());
         res.put("points", u.getPoints());
 
-        // God-Mode Routing: Detects exact Java Object type for the frontend
         String role = "student";
-        if (u instanceof Admin) {
-            role = "admin";
-        } else if (u instanceof Teacher) {
-            role = "teacher";
-        }
+        if (u instanceof Admin) { role = "admin"; }
+        else if (u instanceof Teacher) { role = "teacher"; }
 
         res.put("role", role);
         return ResponseEntity.ok(res);
     }
 
     // ══════════════════════════════════════════════════════
-    // BROADCASTS (Added for Banner Logic)
+    // BROADCASTS
     // ══════════════════════════════════════════════════════
 
     @GetMapping("/broadcast/latest")
     public ResponseEntity<Map<String, String>> getLatestAnnouncement() {
-        // This links to the announcements table we created in MySQL
         Map<String, String> announcement = contentDAO.getLatestAnnouncement();
         return ResponseEntity.ok(announcement);
     }
 
     // ══════════════════════════════════════════════════════
-    // QUESTIONS & MODERATION
+    // QUESTIONS & ANSWERS
     // ══════════════════════════════════════════════════════
 
     @GetMapping("/questions")
@@ -91,9 +85,22 @@ public class HiveController {
     @GetMapping("/questions/urgent")
     public List<Question> getUrgent() { return contentDAO.getUnansweredOver24Hours(); }
 
+    @PostMapping("/questions/{id}/answers")
+    public ResponseEntity<String> postAnswer(@PathVariable int id, @RequestBody Map<String, String> body) {
+        String text = body.get("text");
+        String authorName = body.get("authorName");
+        contentDAO.saveAnswer(id, new Answer(text, authorName));
+        return ResponseEntity.ok("Answer posted.");
+    }
+
     // ══════════════════════════════════════════════════════
     // RESOURCES & UPLOADS
     // ══════════════════════════════════════════════════════
+
+    @GetMapping("/resources")
+    public List<Resource> getAllResources() {
+        return contentDAO.getResourcesByCourse(""); // Empty string matches all
+    }
 
     @GetMapping("/resources/{course}")
     public List<Resource> getResources(@PathVariable String course) {
@@ -126,6 +133,34 @@ public class HiveController {
             result.put("error", "Upload failed");
             return ResponseEntity.status(500).body(result);
         }
+    }
+
+    @DeleteMapping("/resources/{id}")
+    public ResponseEntity<String> deleteResource(@PathVariable int id) {
+        contentDAO.deleteResourceWithFile(id, UPLOAD_DIR);
+        return ResponseEntity.ok("Deleted.");
+    }
+
+    // ══════════════════════════════════════════════════════
+    // ASSIGNMENTS & SUBMISSIONS
+    // ══════════════════════════════════════════════════════
+
+    @GetMapping("/assignments/all")
+    public List<Assignment> getAllAssignments() {
+        return contentDAO.getAllAssignments();
+    }
+
+    @PostMapping("/assignments")
+    public ResponseEntity<String> postAssignment(@RequestBody Assignment a) {
+        contentDAO.saveAssignment(a);
+        return ResponseEntity.ok("Assignment posted.");
+    }
+
+    @PostMapping("/assignments/{id}/submit")
+    public ResponseEntity<String> submitAssignment(@PathVariable int id, @RequestBody Submission s) {
+        s.setAssignmentId(id);
+        contentDAO.saveSubmission(id, s);
+        return ResponseEntity.ok("Submitted.");
     }
 
     // ══════════════════════════════════════════════════════
@@ -178,10 +213,6 @@ public class HiveController {
 
     @GetMapping("/stats/subjects")
     public Map<String,Long> subjectStats() { return contentDAO.getSubjectStats(); }
-
-    // ══════════════════════════════════════════════════════
-    // PRIVATE HELPERS
-    // ══════════════════════════════════════════════════════
 
     private String detectType(String name) {
         if (name == null) return "file";
