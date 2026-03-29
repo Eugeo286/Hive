@@ -476,4 +476,22 @@ public class ContentDAO {
         }
         return announcement;
     }
+    // ══════════════════════════════════════════════════════
+    // AUTOMATED CLEANUP (ROBOT JANITOR)
+    // ══════════════════════════════════════════════════════
+    public void deleteOldQuestions() {
+        // Deletes questions that are older than 30 days
+        String sql = "DELETE FROM questions WHERE created_at < NOW() - INTERVAL 30 DAY";
+        try (Connection c = DBUtil.getConnection();
+             PreparedStatement s = c.prepareStatement(sql)) {
+
+            int deletedCount = s.executeUpdate();
+            if (deletedCount > 0) {
+                System.out.println("🧹 Robot Janitor: Woke up and deleted " + deletedCount + " old questions!");
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error during scheduled cleanup: " + e.getMessage());
+        }
+    }
 }

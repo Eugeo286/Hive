@@ -295,6 +295,78 @@
   } catch(e) {}
   }
 
+  async function fetchQuestions() {
+      try {
+          const res = await fetch('/api/hive/questions');
+          const questions = await res.json();
+
+          document.getElementById('qa-container').innerHTML = questions.map(q => `
+              <div class="panel" style="margin-bottom: 15px; padding: 20px;">
+                  <div style="display:flex; justify-content: space-between; align-items: flex-start;">
+                      <div>
+                          <h3 style="margin-bottom: 5px;">${q.title}</h3>
+                          <span style="font-size: 12px; color: var(--text-2);">Asked by: ${q.authorName} | Course: ${q.subject}</span>
+                      </div>
+                      ${q.answered
+                          ? `<span class="badge" style="background: var(--primary);">Answered</span>`
+                          : `<span class="badge" style="background: var(--danger);">Pending</span>`
+                      }
+                  </div>
+
+                  ${q.answered && q.answerText ? `
+                      <div style="margin-top: 15px; padding: 15px; background: rgba(41, 128, 185, 0.15); border-left: 3px solid var(--primary); border-radius: 0 8px 8px 0;">
+                          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                              <div>
+                                  <p style="font-size: 12px; color: var(--primary); font-weight: bold; margin-bottom: 5px; text-transform: uppercase;">Faculty Response:</p>
+                                  <p style="font-size: 14px; line-height: 1.5;">${q.answerText}</p>
+                              </div>
+
+                              ${(user.role === 'teacher' || user.role === 'admin') ? `
+                                  <button class="btn-action" style="padding: 5px 10px; font-size: 11px; border-color: var(--primary); color: var(--primary);" onclick="editAnswer(${q.id})">
+                                      <i class="fa-solid fa-pen"></i> Fix Answer
+                                  </button>
+                              ` : ''}
+                          </div>
+                      </div>
+                  ` : `
+                      <div style="margin-top: 15px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; font-size: 13px; color: var(--text-2); font-style: italic;">
+                          Waiting for a professor or peer to answer this question...
+                      </div>
+                  `}
+              </div>
+          `).join('') || "No questions have been asked yet.";
+      } catch (e) {
+          console.error("Failed to load Q&A");
+      }
+  }
+
+  // 🔴 THE NEW EDIT LOGIC
+  async function editAnswer(questionId) {
+      // 1. Ask the teacher for the new answer
+      const newAnswer = prompt("Type the corrected answer below:");
+
+      // 2. If they typed something and didn't hit 'Cancel'
+      if (newAnswer !== null && newAnswer.trim() !== "") {
+          try {
+              // 3. Send the updated answer to the Java backend to overwrite the old one
+              const res = await fetch(`/api/hive/questions/${questionId}/answers`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ text: newAnswer, authorName: user.name })
+              });
+
+              if(res.ok) {
+                  // 4. Instantly refresh the screen to show the new answer
+                  fetchQuestions();
+              } else {
+                  alert("Failed to update the answer on the server.");
+              }
+          } catch(e) {
+              alert("Network error while trying to update answer.");
+          }
+      }
+  }
+
   // --- RESOURCES LIST LOGIC ---
   async function fetchTeacherResources() {
   try {
