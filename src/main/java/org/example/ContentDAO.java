@@ -24,13 +24,39 @@ public class ContentDAO {
         } catch (SQLException e) { e.printStackTrace(); }
     }
 
+    // 🔴 THE FIX: Upgraded method to fetch the actual answer text using a sub-query
     public List<Question> getAllQuestions() {
-        List<Question> list = new ArrayList<>();
-        String sql = "SELECT * FROM questions ORDER BY is_answered ASC, created_at DESC";
-        try (Connection c = DBUtil.getConnection(); Statement s = c.createStatement(); ResultSet rs = s.executeQuery(sql)) {
-            while (rs.next()) list.add(mapQuestion(rs));
-        } catch (SQLException e) { e.printStackTrace(); }
-        return list;
+        List<Question> questions = new ArrayList<>();
+
+        // This SQL query now grabs the matching answer_text from the answers table
+        String sql = "SELECT q.*, (SELECT text FROM answers a WHERE a.question_id = q.id ORDER BY created_at DESC LIMIT 1) AS fetched_answer FROM questions q ORDER BY q.is_answered ASC, q.created_at DESC";
+
+        try (Connection c = DBUtil.getConnection();
+             PreparedStatement s = c.prepareStatement(sql);
+             ResultSet rs = s.executeQuery()) {
+
+            while (rs.next()) {
+                Question q = new Question(
+                        rs.getString("title"),
+                        rs.getString("subject"),
+                        "Medium",
+                        rs.getString("author_name")
+                );
+                q.setId(rs.getInt("id"));
+                q.setAnswered(rs.getBoolean("is_answered"));
+
+                Timestamp ts = rs.getTimestamp("created_at");
+                if (ts != null) q.setCreatedAt(ts.toLocalDateTime());
+
+                // 🔴 Grabs the fetched answer text and attaches it to the Question object
+                q.setAnswerText(rs.getString("fetched_answer"));
+
+                questions.add(q);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return questions;
     }
 
     public List<Question> getUnansweredOver24Hours() {

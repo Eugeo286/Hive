@@ -11,6 +11,9 @@ public class Question {
     private boolean       answered;
     private LocalDateTime createdAt;
 
+    // 🔴 ADDED: This holds the text of the answer so the frontend can display it!
+    private String        answerText;
+
     public Question() {}
     public Question(String title, String subject, String difficulty, String authorName) {
         this.title      = title;
@@ -34,4 +37,8 @@ public class Question {
     public void          setAnswered(boolean a)           { this.answered = a; }
     public LocalDateTime getCreatedAt()                   { return createdAt; }
     public void          setCreatedAt(LocalDateTime t)    { this.createdAt = t; }
+
+    // 🔴 ADDED: Getters and Setters for the answer text
+    public String        getAnswerText()                  { return answerText; }
+    public void          setAnswerText(String text)       { this.answerText = text; }
 }
