@@ -56,50 +56,67 @@
     </style>
     <style>
         /* =================================================================
-           OPTION 3: FUTURISTIC LEARNING (DEFAULT DARK MODE) - BRIGHTER
+           THE HIVE: PREMIUM LOGIN BACKGROUND
+           Enhances the original dark amber vibe with richer gradients.
            ================================================================= */
         body {
-            /* Slightly brighter deep blue base instead of near-black */
-            background-color: #081229 !important;
-
-            /* Increased opacity for much brighter glowing corners and grid */
-            background-image:
-                radial-gradient(circle at 15% 50%, rgba(0, 242, 254, 0.35), transparent 40%),
-                radial-gradient(circle at 85% 30%, rgba(255, 0, 222, 0.35), transparent 40%),
-                linear-gradient(rgba(0, 242, 254, 0.12) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 242, 254, 0.12) 1px, transparent 1px) !important;
-            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px !important;
+            /* Richer, smoother dark espresso-to-black gradient */
+            background: radial-gradient(circle at 50% 40%, #1a1005 0%, #050301 100%) !important;
             background-attachment: fixed !important;
-            transition: all 0.5s ease-in-out;
+            margin: 0;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Adds a very soft, ambient golden glow directly behind the center card */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(255, 170, 0, 0.04) 0%, transparent 60%);
+            z-index: -1;
+            pointer-events: none;
         }
 
         /* =================================================================
-           OPTION 1: MODERN GRADIENT (LIGHT MODE) - BRIGHTER
-           Activates when the body has class="light-mode"
+           PREMIUM CARD POLISH (Glassmorphism)
+           Makes the central card look expensive and cleanly separated from the background
            ================================================================= */
-        body.light-mode {
-            /* Pure white base to make colors pop */
-            background-color: #ffffff !important;
-
-            /* Increased opacity and spread for much more vibrant colors */
-            background-image:
-                radial-gradient(circle at 0% 0%, rgba(79, 172, 254, 0.5) 0%, transparent 70%),
-                radial-gradient(circle at 100% 0%, rgba(0, 242, 254, 0.45) 0%, transparent 60%),
-                radial-gradient(circle at 100% 100%, rgba(255, 0, 222, 0.35) 0%, transparent 70%) !important;
-            background-size: 100% 100% !important;
-        }
-
-        /* =================================================================
-           PROTECTING YOUR CONTAINERS
-           ================================================================= */
-        .command-center-container,
         .reset-password-container,
-        .login-container,
-        .overseer-panel {
-            background: rgba(25, 18, 12, 0.95) !important;
-            backdrop-filter: blur(8px);
+        .login-container {
+            background: rgba(26, 17, 10, 0.85) !important; /* Rich, slightly transparent brown */
+            backdrop-filter: blur(12px) !important; /* Smooth glass frosted effect */
+            border: 1px solid rgba(255, 170, 0, 0.15) !important; /* Very subtle golden edge */
+            border-radius: 20px !important;
+
+            /* Combines a deep drop shadow with a soft outer golden glow */
+            box-shadow:
+                0 25px 50px rgba(0, 0, 0, 0.6),
+                0 0 40px rgba(255, 170, 0, 0.05) !important;
+        }
+
+        /* Makes the input fields match the premium look */
+        input[type="email"],
+        input[type="password"],
+        input[type="text"] {
+            background: rgba(0, 0, 0, 0.3) !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5) !important;
+            color: #ffffff !important;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Highlights the input fields with a golden tint when the user clicks them */
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="text"]:focus {
+            border-color: rgba(255, 170, 0, 0.5) !important;
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.1) !important;
+            outline: none;
         }
     </style>
 </head>
