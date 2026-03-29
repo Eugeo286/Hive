@@ -20,10 +20,23 @@
         transition: all 0.5s ease-in-out;
     }
     .main { margin-left: 280px; flex: 1; padding: 40px; position: relative; z-index: 1; }
-    .view-section { display: none; }
+    .view-section { display: none; width: 100%; }
     .view-section.active { display: block; animation: fadeIn 0.4s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
     .ai-glass-box { margin-top: 15px; padding: 15px; border-radius: 8px; background: rgba(236, 72, 153, 0.1); border-left: 3px solid #EC4899; }
+
+    /* Panel Chat Styles */
+    .msg { padding: 10px 15px; border-radius: 15px; font-size: 13px; max-width: 80%; line-height: 1.4; border: 1px solid rgba(255,255,255,0.05); }
+    .msg.them { background: rgba(255,255,255,0.08); align-self: flex-start; border-bottom-left-radius: 4px; }
+    .msg.me { background: var(--gold); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .msg-info { font-size: 10px; color: var(--text-2); margin-bottom: 4px; font-weight: bold; text-transform: uppercase; }
+    .fullscreen-chat {
+        position: fixed !important; top: 0; left: 0;
+        width: 100vw !important; height: 100vh !important;
+        z-index: 9999; border-radius: 0 !important; margin: 0 !important;
+        background: #081229 !important; /* Ensure background stays solid */
+    }
   </style>
 </head>
 <body class="light-mode">
@@ -31,59 +44,97 @@
 <div class="hive-watermark">HIVE</div>
 
 <div class="sidebar" id="sidebar">
-  <div style="display: flex; align-items: center; margin-bottom: 40px; padding: 0 10px;">
+  <div style="display: flex; align-items: center; margin-bottom: 40px; padding: 10px;">
     <div class="sb-hex"><i class="fa-solid fa-graduation-cap"></i></div>
     <div class="brand-title" style="margin-left: 15px;">The Hive</div>
   </div>
 
   <div class="nav-item active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-house"></i> Dashboard</div>
-  <div class="nav-item" id="nav-enrollment" onclick="switchTab('enrollment', this)"><i class="fa-solid fa-plus-circle"></i> Course Enrollment</div>
-  <div class="nav-item" onclick="switchTab('qa', this)"><i class="fa-solid fa-comments"></i> Q&A Board</div>
+  <div class="nav-item" onclick="switchTab('enrollment', this)"><i class="fa-solid fa-plus-circle"></i> Subject Enrollment</div>
+  <div class="nav-item" onclick="switchTab('chatpanel', this)"><i class="fa-solid fa-comments"></i> Peer Chat Panel</div>
+  <div class="nav-item" onclick="switchTab('qa', this)"><i class="fa-solid fa-circle-question"></i> Q&A Board</div>
   <div class="nav-item" onclick="switchTab('resources', this)"><i class="fa-solid fa-book-open"></i> Resources & Library</div>
   <div class="nav-item" onclick="switchTab('assignments', this)"><i class="fa-solid fa-clipboard-list"></i> Assignments</div>
   <div class="nav-item" onclick="switchTab('sessions', this)"><i class="fa-solid fa-video"></i> Video Sessions</div>
   <div class="nav-item" onclick="switchTab('quizzes', this)"><i class="fa-solid fa-stopwatch"></i> Live Quizzes</div>
+
   <div class="nav-item" style="margin-top: auto; color: var(--danger);" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</div>
 </div>
 
 <div class="main">
+  <div id="global-banner" style="display:none; background: #FF4C4C; color: white; padding: 12px 20px; text-align: center; font-weight: bold; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(255, 76, 76, 0.4);">
+    <i class="fa-solid fa-bullhorn" style="margin-right: 10px;"></i> <span id="banner-text"></span>
+  </div>
+
   <div class="header">
     <div><h1 id="welcome-text">Welcome back</h1><p>Ready to earn some skill points today?</p></div>
     <div class="header-profile header-actions">
-      <select id="active-course-selector" class="course-selector" onchange="changeActiveCourse()">
-        <option value="">Enrolling...</option>
-      </select>
-      <button class="btn-action" style="border-color: var(--gold); color: var(--gold);" onclick="goToChat()"><i class="fa-regular fa-comments"></i> Chat</button>
+      <div class="notif-wrapper" onclick="fetchNotifications()" style="cursor: pointer;">
+        <i class="fa-solid fa-bell"></i><span class="notif-badge" id="notif-count">0</span>
+      </div>
       <img id="user-avatar" src="" class="avatar" alt="User Avatar">
     </div>
   </div>
 
   <div id="view-dashboard" class="view-section active">
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-title">My Skill Points</div><div class="stat-val" id="user-points" style="color:var(--gold);">0</div></div>
-      <div class="stat-card"><div class="stat-title">Enrolled Courses</div><div class="stat-val" id="course-count" style="font-size: 24px; margin-top: 15px;">0</div></div>
+      <div class="stat-card">
+        <div class="stat-title">My Skill Points <span id="user-badge" class="badge">Novice</span></div>
+        <div class="stat-val" id="user-points" style="color:var(--gold);">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Enrolled Subjects</div>
+        <div class="stat-val" id="course-count" style="font-size: 36px; margin-top: 10px;">0</div>
+      </div>
     </div>
     <div class="content-grid">
-      <div class="panel"><h2>Progression</h2><div class="chart-container"><canvas id="studentChart"></canvas></div></div>
-      <div class="panel"><h2>Upcoming Deadlines</h2><div id="dash-deadlines" class="activity-feed"></div></div>
+      <div class="panel">
+        <h2>My Active Subjects</h2>
+        <p style="font-size: 13px; color: var(--text-2); margin-bottom: 15px;">You are currently enrolled in:</p>
+        <div id="my-courses-container" style="display: grid; gap: 10px;">Loading...</div>
+      </div>
     </div>
   </div>
 
   <div id="view-enrollment" class="view-section">
     <div class="panel">
-      <h2>Available Courses</h2>
-      <p style="color: var(--text-2); margin-bottom: 20px;">You must enroll in a course to access its Chat and Q&A.</p>
-      <div id="enrollment-container" style="display: grid; gap: 10px;">Loading courses...</div>
+      <h2>Subject Catalog</h2>
+      <p style="color: var(--text-2); margin-bottom: 20px;">Browse and enroll in available subjects. You must enroll to see related Q&A, Chat, and Quizzes.</p>
+      <div id="enrollment-container" style="display: grid; gap: 10px;">Loading catalog...</div>
+    </div>
+  </div>
+
+  <div id="view-chatpanel" class="view-section">
+    <div class="panel" id="chat-panel-container" style="height: 70vh; display: flex; flex-direction: column;">
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0;"><i class="fa-solid fa-comments"></i> Peer Chat Room</h2>
+        <button class="btn-action" onclick="toggleFullscreenChat()"><i class="fa-solid fa-expand"></i> Expand</button>
+      </div>
+
+      <select id="chat-subject-select" class="course-selector" style="margin-bottom: 15px; width: 100%;" onchange="loadPanelChat()"></select>
+
+      <div id="chat-panel-messages" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="color: gray; text-align: center; margin-top: 20px;">Select a subject to view chat.</div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <input type="text" id="chat-panel-input" placeholder="Type a message..." style="margin: 0; flex: 1;">
+        <button class="btn-gold" onclick="sendPanelChat()">Send</button>
+      </div>
     </div>
   </div>
 
   <div id="view-qa" class="view-section">
     <div class="content-grid">
-      <div class="panel"><h2>Community Questions (Your Courses)</h2><div id="questions-container"></div></div>
+      <div class="panel">
+        <h2>Community Feed (Your Subjects)</h2>
+        <div id="questions-container" style="display: grid; gap: 15px;"></div>
+      </div>
       <div class="panel">
         <h2>Ask the Hive</h2>
+        <select id="q-course" class="course-selector" style="margin-bottom: 15px; width: 100%;"></select>
         <input type="text" id="q-title" placeholder="What's your question?">
-        <input type="text" id="q-subject" placeholder="Subject (e.g., Java)">
         <button class="btn-gold" style="width:100%;" onclick="postQuestion()">Post Question</button>
       </div>
     </div>
@@ -91,36 +142,36 @@
 
   <div id="view-resources" class="view-section">
     <div class="content-grid">
-      <div class="panel"><h2>Materials</h2><div id="resources-container"></div></div>
+      <div class="panel"><h2>Subject Materials</h2><div id="resources-container"></div></div>
       <div class="panel">
         <h2>Global Library Search</h2>
-        <input type="text" id="book-search" placeholder="Search title or topic...">
-        <button class="btn-gold" onclick="searchBooks()" style="width:100%; margin-top:10px;">Search Books</button>
+        <input type="text" id="book-search" placeholder="Search book title or topic...">
+        <button class="btn-gold" onclick="searchBooks()" style="width:100%; margin-top:10px;">Search Online Library</button>
         <div id="books-container" style="margin-top: 15px; display: grid; gap: 10px;"></div>
       </div>
     </div>
   </div>
 
   <div id="view-assignments" class="view-section">
-    <div class="panel"><h2>Pending Assignments</h2><div id="assignments-container"></div></div>
+    <div class="panel"><h2>Pending Assignments</h2><div id="assignments-container" style="display:grid; gap:10px;"></div></div>
   </div>
 
   <div id="view-sessions" class="view-section">
-    <div class="panel"><h2>Upcoming Sessions</h2><div id="sessions-container"></div></div>
+    <div class="panel"><h2>Upcoming Live Sessions</h2><div id="sessions-container" style="display:grid; gap:10px;"></div></div>
   </div>
 
   <div id="view-quizzes" class="view-section">
-    <div class="panel" id="quiz-list-panel"><h2>Available Quizzes</h2><div id="quizzes-container"></div></div>
+    <div class="panel" id="quiz-list-panel"><h2>Available Quizzes</h2><div id="quizzes-container" style="display:grid; gap:10px;"></div></div>
     <div class="panel" id="active-quiz-panel" style="display: none; border: 2px solid var(--gold);">
-      <div style="display: flex; justify-content: space-between;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
         <h2 id="active-quiz-title">Quiz</h2>
         <div id="quiz-timer" style="font-size: 24px; color: var(--danger); font-weight: bold;">00:00</div>
       </div>
-      <div id="question-counter" style="font-weight: bold; margin: 10px 0;">Question 1</div>
+      <div id="question-counter" style="font-weight: bold; margin: 10px 0; color: var(--text-2);">Question 1</div>
       <div id="quiz-single-question-area" style="font-size: 18px; margin-bottom: 30px;"></div>
       <div style="display: flex; justify-content: space-between;">
-        <button class="btn-gold" id="btn-next-q" onclick="nextQuestion()">Next</button>
-        <button class="btn-gold" id="btn-submit-q" style="display:none; background: var(--danger);" onclick="submitQuiz()">Submit</button>
+        <button class="btn-gold" id="btn-next-q" onclick="nextQuestion()">Next Question</button>
+        <button class="btn-gold" id="btn-submit-q" style="display:none; background: var(--danger);" onclick="submitQuiz()">Submit Quiz</button>
       </div>
     </div>
   </div>
@@ -130,8 +181,9 @@
   const user = JSON.parse(localStorage.getItem('hive_user'));
   if (!user) window.location.href = "index.html";
 
-  let activeCourseId = null;
+  let enrolledCourses = [];
   let enrolledCourseIds = [];
+  let chatPollInterval = null;
 
   // Quiz Variables
   let currentQuizQuestions = [];
@@ -147,46 +199,101 @@
 
   function switchTab(tabId, element) {
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      element.classList.add('active');
+      if(element) element.classList.add('active');
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
       document.getElementById('view-' + tabId).classList.add('active');
+
+      // Manage Chat Polling
+      if(tabId === 'chatpanel') {
+          loadPanelChat();
+          if(!chatPollInterval) chatPollInterval = setInterval(loadPanelChat, 3000);
+      } else {
+          clearInterval(chatPollInterval);
+          chatPollInterval = null;
+      }
 
       if(tabId === 'enrollment') fetchAllCoursesForEnrollment();
       if(tabId === 'qa') fetchQuestions();
       if(tabId === 'assignments') fetchAssignments();
       if(tabId === 'sessions') fetchSessions();
       if(tabId === 'quizzes') fetchQuizzes();
+      if(tabId === 'resources') fetchResources();
   }
 
-  function goToChat() {
-      if(!activeCourseId) {
-          alert("You must enroll in a course and select it first!");
-          switchTab('enrollment', document.getElementById('nav-enrollment'));
-          return;
+  // --- NOTIFICATIONS (FIXED PLACEHOLDER) ---
+  async function fetchNotifications() {
+      try {
+          const res = await fetch(`/api/hive/notifications/${user.id}`);
+          if (!res.ok) throw new Error("Server error");
+          const notifs = await res.json();
+          if(notifs.length > 0) {
+              alert("Your Alerts:\n\n" + notifs.map(n => "- " + n.message).join("\n"));
+          } else {
+              alert("No new notifications at this time.");
+          }
+      } catch(e) {
+          alert("No new notifications at this time.");
       }
-      localStorage.setItem('chat_context_id', activeCourseId);
-      window.location.href = 'chat.html';
   }
 
-  // --- ENROLLMENT SYSTEM ---
+  // --- ENROLLMENT, SUBJECTS & UN-ENROLLMENT ---
   async function loadUserCourses() {
-      const res = await fetch(`/api/hive/users/${user.id}/courses`);
-      const courses = await res.json();
-      enrolledCourseIds = courses.map(c => c.id);
-      document.getElementById('course-count').innerText = courses.length;
+      try {
+          const res = await fetch(`/api/hive/users/${user.id}/courses`);
+          if (!res.ok) throw new Error("Server rejected request");
 
-      const selector = document.getElementById('active-course-selector');
-      if(courses.length > 0) {
-          selector.innerHTML = courses.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
-          activeCourseId = courses[0].id;
-      } else {
-          selector.innerHTML = '<option value="">No Courses (Go to Enrollment)</option>';
-          activeCourseId = null;
+          enrolledCourses = await res.json();
+          enrolledCourseIds = enrolledCourses.map(c => c.id);
+
+          document.getElementById('course-count').innerText = enrolledCourses.length;
+
+          // Dashboard Cards with Chat AND Un-enroll button
+          document.getElementById('my-courses-container').innerHTML = enrolledCourses.map(c => `
+              <div class="item-card" style="align-items: center;">
+                  <div><strong>${c.title}</strong></div>
+                  <div style="display: flex; gap: 10px;">
+                      <button class="btn-action" style="color:var(--gold); border-color:var(--gold);" onclick="switchTab('chatpanel', document.querySelectorAll('.nav-item')[2]); setTimeout(() => { document.getElementById('chat-subject-select').value = ${c.id}; loadPanelChat(); }, 100);"><i class="fa-solid fa-comments"></i> Chat</button>
+
+                      ${c.id !== 1 ? `<button class="btn-action delete" title="Drop Course" onclick="unenrollCourse(${c.id})"><i class="fa-solid fa-xmark"></i></button>` : `<span style="font-size:10px; color:gray; margin-top:10px;">Lounge</span>`}
+                  </div>
+              </div>
+          `).join('') || "You haven't enrolled in any subjects yet.";
+
+          const optsId = enrolledCourses.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+          if(document.getElementById('q-course')) document.getElementById('q-course').innerHTML = optsId;
+          if(document.getElementById('chat-subject-select')) document.getElementById('chat-subject-select').innerHTML = optsId;
+
+      } catch(e) {
+          console.error("Database connection error:", e);
+          document.getElementById('my-courses-container').innerHTML =
+              `<div style="color: var(--danger); padding: 15px; border: 1px solid var(--danger); border-radius: 8px; background: rgba(255,0,0,0.1);">
+                  <i class="fa-solid fa-triangle-exclamation"></i> Could not connect to The Hive database. Please refresh your browser or contact the System Admin.
+              </div>`;
       }
-      initChart();
   }
 
-  function changeActiveCourse() { activeCourseId = document.getElementById('active-course-selector').value; }
+  // The Un-Enroll Logic
+  async function unenrollCourse(courseId) {
+      if(confirm("Are you sure you want to drop this subject? You will lose access to its Q&A and Chat.")) {
+          await fetch(`/api/hive/courses/${courseId}/unenroll/${user.id}`, { method: 'DELETE' });
+          alert("Course dropped successfully.");
+          loadUserCourses();
+      }
+  }
+
+  // The Broadcast Listener
+  async function checkBroadcast() {
+      try {
+          const res = await fetch('/api/hive/admin/broadcast/latest');
+          const data = await res.json();
+          if(data && data.message) {
+              document.getElementById('global-banner').style.display = 'block';
+              document.getElementById('banner-text').innerText = data.message;
+          } else {
+              document.getElementById('global-banner').style.display = 'none';
+          }
+      } catch(e) { }
+  }
 
   async function fetchAllCoursesForEnrollment() {
       const res = await fetch('/api/hive/courses');
@@ -198,18 +305,67 @@
               <div><strong>${c.title}</strong> (${c.courseCode})</div>
               ${isEnrolled
                 ? `<button class="btn-action" disabled style="color:var(--primary); border-color:var(--primary);">Enrolled <i class="fa-solid fa-check"></i></button>`
-                : `<button class="btn-gold" onclick="enrollCourse(${c.id})">Enroll</button>`}
+                : `<button class="btn-gold" onclick="enrollCourse(${c.id})">Enroll Now</button>`}
           </div>`;
-      }).join('') || "No courses available. Admin needs to add them.";
+      }).join('') || "No subjects available. Admin needs to deploy them.";
   }
 
   async function enrollCourse(cId) {
-      await fetch(`/api/hive/courses/${cId}/enroll`, {
-          method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({userId: user.id, role: user.role})
-      });
+      await fetch(`/api/hive/courses/${cId}/enroll`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({userId: user.id, role: user.role}) });
       alert("Enrolled successfully!");
       await loadUserCourses();
       fetchAllCoursesForEnrollment();
+  }
+
+  // --- EMBEDDED PANEL CHAT ---
+  async function loadPanelChat() {
+      const subjectId = document.getElementById('chat-subject-select').value;
+      if(!subjectId) return;
+
+      try {
+          const res = await fetch(`/api/hive/chat/course/${subjectId}`);
+          const messages = await res.json();
+          const chatBox = document.getElementById('chat-panel-messages');
+
+          // Check scroll position to avoid jumpiness
+          const isAtBottom = chatBox.scrollHeight - chatBox.clientHeight <= chatBox.scrollTop + 50;
+
+          chatBox.innerHTML = messages.map(m => `
+              <div class="msg ${m.senderId === user.id ? 'me' : 'them'}">
+                  ${m.senderId !== user.id ? `<div class="msg-info">${m.senderName}</div>` : ''}
+                  ${m.content}
+              </div>
+          `).join('') || "<div style='color: gray; text-align: center; margin-top: 20px;'>Be the first to say hello!</div>";
+
+          if(isAtBottom) chatBox.scrollTop = chatBox.scrollHeight;
+      } catch (e) { console.error("Chat sync failed"); }
+  }
+
+  async function sendPanelChat() {
+      const subjectId = document.getElementById('chat-subject-select').value;
+      const input = document.getElementById('chat-panel-input');
+      if(!input.value.trim() || !subjectId) return;
+
+      await fetch('/api/hive/chat/send', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ senderId: user.id, courseId: subjectId, content: input.value })
+      });
+      input.value = '';
+      loadPanelChat();
+  }
+
+  function toggleFullscreenChat() {
+      const panel = document.getElementById('chat-panel-container');
+      panel.classList.toggle('fullscreen-chat');
+
+      if(panel.classList.contains('fullscreen-chat')) {
+          panel.style.height = '100vh';
+          panel.style.padding = '40px';
+      } else {
+          panel.style.height = '70vh';
+          panel.style.padding = '25px';
+      }
+      loadPanelChat();
   }
 
   // --- Q&A SYSTEM ---
@@ -217,56 +373,58 @@
       const res = await fetch('/api/hive/questions');
       let data = await res.json();
 
-      // Filter to only show questions for courses the student is enrolled in
+      // Filter out questions for subjects the user isn't enrolled in
       data = data.filter(q => enrolledCourseIds.includes(q.courseId));
 
       document.getElementById('questions-container').innerHTML = data.map(q => `
-          <div class="item-card" style="flex-direction:column; align-items:start;">
-              <strong>${q.title}</strong>
-              <span style="font-size:11px; color:var(--text-2);">${q.subject}</span>
-              ${q.aiAnswer ? `<div class="ai-glass-box"><strong><i class="fa-solid fa-robot"></i> AI Tutor:</strong> ${q.aiAnswer}</div>` : ''}
-              ${q.answered && q.answerText ? `<div style="margin-top:10px; padding:10px; border-left:3px solid var(--primary); background:rgba(41, 128, 185, 0.15);"><strong>Peer/Faculty Answer:</strong><br>${q.answerText}</div>` : ''}
+          <div class="item-card" style="flex-direction:column; align-items:start; padding: 20px;">
+              <strong style="font-size:16px;">${q.title}</strong>
+              <span style="font-size:12px; color:var(--text-2); margin-bottom: 10px;">By: ${q.authorName}</span>
+
+              ${q.aiAnswer ? `<div class="ai-glass-box" style="margin-top:5px; margin-bottom: 10px;"><strong><i class="fa-solid fa-robot"></i> Hivemind AI:</strong><br>${q.aiAnswer}</div>` : ''}
+              ${q.answered && q.answerText ? `<div style="margin-top:5px; margin-bottom: 10px; padding:15px; border-left:3px solid var(--primary); background:rgba(41, 128, 185, 0.15); border-radius: 4px;"><strong>Faculty/Peer Answer:</strong><br>${q.answerText}</div>` : ''}
+
               <div style="margin-top:10px; display:flex; gap:10px;">
-                ${!q.aiAnswer ? `<button class="btn-action" style="border-color:#EC4899; color:#EC4899;" onclick="askAI(${q.id}, '${q.title}')">Ask AI</button>` : ''}
-                <button class="btn-action" onclick="answerQuestionPrompt(${q.id})">Reply</button>
+                ${!q.aiAnswer ? `<button class="btn-action" style="border-color:#EC4899; color:#EC4899;" onclick="askAI(${q.id}, '${q.title.replace(/'/g, "\\'")}')"><i class="fa-solid fa-bolt"></i> Ask AI</button>` : ''}
+                <button class="btn-action" onclick="answerPrompt(${q.id})"><i class="fa-solid fa-reply"></i> Reply (+10 pts)</button>
               </div>
           </div>
-      `).join('') || "No questions for your enrolled courses yet.";
+      `).join('') || "<div style='color: gray; font-style: italic;'>No questions found for your enrolled subjects.</div>";
   }
 
-  async function answerQuestionPrompt(id) {
-      const ans = prompt("Enter your answer:");
-      if(ans) {
-          await fetch(`/api/hive/questions/${id}/answers`, {
-              method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text: ans, authorName: user.name})
-          });
+  async function postQuestion() {
+      const courseId = document.getElementById('q-course').value;
+      if(!courseId) return alert("You must enroll in a subject first.");
+
+      const payload = {
+          title: document.getElementById('q-title').value,
+          subject: document.getElementById('q-course').options[document.getElementById('q-course').selectedIndex].text,
+          courseId: courseId,
+          authorName: user.name
+      };
+      await fetch('/api/hive/questions', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+      document.getElementById('q-title').value = '';
+      fetchQuestions();
+  }
+
+  async function answerPrompt(id) {
+      const ans = prompt("Enter your answer to help your peer:");
+      if(ans && ans.trim() !== "") {
+          await fetch(`/api/hive/questions/${id}/answers`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text: ans, authorName: user.name}) });
+          user.points += 10;
+          localStorage.setItem('hive_user', JSON.stringify(user));
+          document.getElementById('user-points').innerText = user.points;
           fetchQuestions();
       }
   }
 
-  async function postQuestion() {
-      if(!activeCourseId) return alert("Select a course from the top dropdown to post a question.");
-      const payload = {
-          title: document.getElementById('q-title').value,
-          subject: document.getElementById('q-subject').value,
-          courseId: activeCourseId,
-          authorName: user.name
-      };
-      await fetch('/api/hive/questions', {
-          method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-      });
-      fetchQuestions();
-  }
-
   async function askAI(id, text) {
-      alert("AI is generating a response...");
-      await fetch(`/api/hive/questions/${id}/ask-ai`, {
-          method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ questionText: text })
-      });
+      alert("AI is analyzing your question...");
+      await fetch(`/api/hive/questions/${id}/ask-ai`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ questionText: text }) });
       fetchQuestions();
   }
 
-  // --- DIRECT OPENLIBRARY SEARCH (FIXED) ---
+  // --- DIRECT OPENLIBRARY SEARCH ---
   async function searchBooks() {
       const query = document.getElementById('book-search').value;
       if(!query) return;
@@ -277,44 +435,85 @@
           document.getElementById('books-container').innerHTML = data.docs.map(b => `
               <div class="item-card" style="flex-direction:column; align-items:flex-start;">
                   <strong>${b.title}</strong><span style="font-size:11px;">By ${b.author_name ? b.author_name[0] : 'Unknown'}</span>
-                  <a href="https://openlibrary.org${b.key}" target="_blank" class="btn-action" style="margin-top:10px;">Read Online</a>
+                  <a href="https://openlibrary.org${b.key}" target="_blank" class="btn-action" style="margin-top:10px;"><i class="fa-solid fa-book"></i> Read Online</a>
               </div>
           `).join('') || "No books found.";
       } catch(e) { document.getElementById('books-container').innerHTML = "Search failed."; }
   }
 
-  // --- OTHERS ---
-  async function fetchAssignments() {
+  // --- GENERAL FETCHERS (ASSIGNMENTS & SESSIONS) ---
+ async function fetchAssignments() {
       const res = await fetch('/api/hive/assignments/all');
-      const data = await res.json();
+      let data = await res.json();
+      const subjectNames = enrolledCourses.map(c => c.title);
+      data = data.filter(a => subjectNames.includes(a.course));
+
       document.getElementById('assignments-container').innerHTML = data.map(a => `
-          <div class="item-card"><div><strong>${a.title}</strong><br><small>Due: ${a.deadline}</small></div><button class="btn-action" onclick="alert('Submission portal opening soon.')">Submit</button></div>
-      `).join('') || "No pending assignments.";
+          <div class="item-card">
+              <div><strong>${a.title}</strong><br><small style="color:var(--danger);">Due: ${a.deadline}</small></div>
+              <button class="btn-action" style="border-color: #4CAF50; color: #4CAF50;" onclick="submitAssignment(${a.id})"><i class="fa-solid fa-upload"></i> Submit Work</button>
+          </div>
+      `).join('') || "You're all caught up! No pending assignments.";
+  }
+
+  async function submitAssignment(assignmentId) {
+      const content = prompt("Enter your submission text, or paste a link to your Google Doc/Drive file:");
+      if(content && content.trim() !== "") {
+          await fetch(`/api/hive/assignments/${assignmentId}/submit`, {
+              method: 'POST', headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ studentName: user.name, content: content })
+          });
+          alert("Assignment submitted to your Professor successfully!");
+      }
   }
 
   async function fetchSessions() {
       const res = await fetch('/api/hive/sessions');
-      const data = await res.json();
+      let data = await res.json();
+      const subjectNames = enrolledCourses.map(c => c.title);
+      data = data.filter(s => subjectNames.includes(s.subject));
+
       document.getElementById('sessions-container').innerHTML = data.map(s => `
-          <div class="item-card"><div><strong>${s.topic}</strong><br><small>${s.scheduledTime}</small></div><a href="${s.meetingLink}" target="_blank" class="btn-action">Join</a></div>
-      `).join('') || "No upcoming sessions.";
+          <div class="item-card">
+              <div><strong>${s.topic}</strong><br><small>${s.scheduledTime} | Host: ${s.host}</small></div>
+              <a href="${s.meetingLink}" target="_blank" class="btn-gold"><i class="fa-solid fa-video"></i> Join</a>
+          </div>
+      `).join('') || "No live sessions scheduled for your subjects.";
   }
 
-  // --- QUIZ WIZARD (FIXED) ---
+  async function fetchResources() {
+      const res = await fetch('/api/hive/resources');
+      const data = await res.json();
+      document.getElementById('resources-container').innerHTML = data.map(r => `
+          <div class="item-card">
+              <div><strong><i class="fa-solid fa-file"></i> ${r.title}</strong><br><small>Subject: ${r.course}</small></div>
+              <a href="${r.link}" download class="btn-action"><i class="fa-solid fa-download"></i> Download</a>
+          </div>
+      `).join('') || "No resources uploaded yet.";
+  }
+
+  // --- QUIZ WIZARD ---
   async function fetchQuizzes() {
       const res = await fetch('/api/quizzes/all');
-      const data = await res.json();
+      let data = await res.json();
+      // Filter by subject ID matching the Quiz Controller schema
+      data = data.filter(q => enrolledCourseIds.includes(parseInt(q.subject)));
+
       document.getElementById('quizzes-container').innerHTML = data.map(q => `
-          <div class="item-card"><div><strong>${q.title}</strong><br><small>${q.durationMinutes} mins</small></div><button class="btn-gold" onclick="startQuiz(${q.id}, ${q.durationMinutes}, '${q.title}')">Start</button></div>
-      `).join('') || "No live quizzes.";
+          <div class="item-card">
+              <div><strong>${q.title}</strong><br><small style="color:var(--text-2);">${q.durationMinutes} mins</small></div>
+              <button class="btn-gold" onclick="startQuiz(${q.id}, ${q.durationMinutes}, '${q.title}')">Start Quiz</button>
+          </div>
+      `).join('') || "No active quizzes for your subjects.";
   }
 
   async function startQuiz(id, mins, title) {
       const res = await fetch(`/api/quizzes/${id}/questions`);
       currentQuizQuestions = await res.json();
-      if(currentQuizQuestions.length === 0) return alert("This quiz has no questions.");
+      if(currentQuizQuestions.length === 0) return alert("This quiz has no questions deployed yet.");
 
       currentQuizId = id; currentQIndex = 0; studentAnswers = {};
+
       document.getElementById('quiz-list-panel').style.display = 'none';
       document.getElementById('active-quiz-panel').style.display = 'block';
       document.getElementById('active-quiz-title').innerText = title;
@@ -324,7 +523,7 @@
           timeLeft--;
           let m = Math.floor(timeLeft / 60); let s = timeLeft % 60;
           document.getElementById('quiz-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-          if (timeLeft <= 0) { clearInterval(quizInterval); alert("Time's up!"); submitQuiz(); }
+          if (timeLeft <= 0) { clearInterval(quizInterval); alert("Time's up! Auto-submitting."); submitQuiz(); }
       }, 1000);
 
       renderQuizQuestion();
@@ -334,12 +533,15 @@
       const q = currentQuizQuestions[currentQIndex];
       document.getElementById('question-counter').innerText = `Question ${currentQIndex + 1} of ${currentQuizQuestions.length}`;
       document.getElementById('quiz-single-question-area').innerHTML = `
-          <p><strong>${q.questionText}</strong></p>
-          <label style="display:block; padding:10px;"><input type="radio" name="qz_opt" value="A"> ${q.optA}</label>
-          <label style="display:block; padding:10px;"><input type="radio" name="qz_opt" value="B"> ${q.optB}</label>
-          <label style="display:block; padding:10px;"><input type="radio" name="qz_opt" value="C"> ${q.optC}</label>
-          <label style="display:block; padding:10px;"><input type="radio" name="qz_opt" value="D"> ${q.optD}</label>
+          <p style="margin-bottom: 20px; font-weight: bold;">${q.questionText}</p>
+          <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+              <label style="display:block; padding:10px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05);"><input type="radio" name="qz_opt" value="A"> A) ${q.optA}</label>
+              <label style="display:block; padding:10px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05);"><input type="radio" name="qz_opt" value="B"> B) ${q.optB}</label>
+              <label style="display:block; padding:10px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05);"><input type="radio" name="qz_opt" value="C"> C) ${q.optC}</label>
+              <label style="display:block; padding:10px; cursor: pointer;"><input type="radio" name="qz_opt" value="D"> D) ${q.optD}</label>
+          </div>
       `;
+
       document.getElementById('btn-submit-q').style.display = (currentQIndex === currentQuizQuestions.length - 1) ? 'block' : 'none';
       document.getElementById('btn-next-q').style.display = (currentQIndex === currentQuizQuestions.length - 1) ? 'none' : 'block';
   }
@@ -362,23 +564,19 @@
           method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ quizId: currentQuizId, studentName: user.name, score: score, total: currentQuizQuestions.length })
       });
-      alert(`Quiz Submitted! Score: ${score}/${currentQuizQuestions.length}`);
+
+      alert(`Quiz Completed! You scored ${score} out of ${currentQuizQuestions.length}.`);
       document.getElementById('active-quiz-panel').style.display = 'none';
       document.getElementById('quiz-list-panel').style.display = 'block';
       fetchQuizzes();
   }
 
-  // --- CHART JS INIT ---
-  function initChart() {
-      const ctx = document.getElementById('studentChart').getContext('2d');
-      new Chart(ctx, {
-          type: 'line', data: { labels: ['Start', 'W1', 'W2', 'W3', 'Now'], datasets: [{ label: 'Skill Points', data: [0, user.points*0.2, user.points*0.5, user.points*0.8, user.points], borderColor: '#D4880A', fill: true }] },
-          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-      });
-  }
-
   function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
+
+  // Ensure the page loads properly
+  checkBroadcast();
   loadUserCourses();
+
 </script>
 </body>
 </html>

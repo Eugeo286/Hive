@@ -6,19 +6,18 @@
   <title>The Hive | Faculty Portal</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="shared.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root { --primary: #2980B9; }
     .sb-hex { background: linear-gradient(135deg, var(--primary), #1A5276); }
     .nav-item.active { background: var(--primary); }
     .btn-gold { background: linear-gradient(135deg, var(--primary), #1A5276); }
     .badge { background: linear-gradient(135deg, var(--primary), #1A5276); }
+
     body { background-color: #081229 !important; transition: all 0.5s ease-in-out;
            background-image: radial-gradient(circle at 15% 50%, rgba(0, 242, 254, 0.35), transparent 40%), radial-gradient(circle at 85% 30%, rgba(255, 0, 222, 0.35), transparent 40%), linear-gradient(rgba(0, 242, 254, 0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 254, 0.12) 1px, transparent 1px) !important; background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px !important; background-attachment: fixed !important; }
     .main { margin-left: 280px; flex: 1; padding: 40px; position: relative; z-index: 1; }
     .view-section { display: none; }
     .view-section.active { display: block; animation: fadeIn 0.4s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body class="light-mode">
@@ -32,7 +31,7 @@
   </div>
 
   <div class="nav-item active" onclick="switchTab('dashboard', this)"><i class="fa-solid fa-house"></i> Overview</div>
-  <div class="nav-item" id="nav-enrollment" onclick="switchTab('enrollment', this)"><i class="fa-solid fa-plus-circle"></i> Course Selection</div>
+  <div class="nav-item" onclick="switchTab('enrollment', this)"><i class="fa-solid fa-plus-circle"></i> Subject Enrollment</div>
   <div class="nav-item" onclick="switchTab('resources', this)"><i class="fa-solid fa-file-arrow-up"></i> Manage Resources</div>
   <div class="nav-item" onclick="switchTab('assignments', this)"><i class="fa-solid fa-clipboard-check"></i> Assignments</div>
   <div class="nav-item" onclick="switchTab('sessions', this)"><i class="fa-solid fa-video"></i> Video Sessions</div>
@@ -44,29 +43,28 @@
   <div class="header">
     <div><h1 id="welcome-text">Faculty Dashboard</h1></div>
     <div class="header-profile header-actions">
-      <select id="active-course-selector" class="course-selector" onchange="changeActiveCourse()">
-        <option value="">Enrolling...</option>
-      </select>
-      <button class="btn-action" style="border-color: var(--primary); color: var(--primary);" onclick="goToChat()"><i class="fa-regular fa-comments"></i> Course Chat</button>
       <span class="badge">Professor</span>
-      <img id="user-avatar" src="" class="avatar" alt="Faculty Avatar">
+      <img id="user-avatar" src="" class="avatar" alt="Faculty Avatar" style="border-color: var(--primary);">
     </div>
   </div>
 
   <div id="view-dashboard" class="view-section active">
     <div class="stats-row">
-      <div class="stat-card" style="border-left: 4px solid var(--danger);"><div class="stat-title">Urgent Queries</div><div class="stat-val" style="color:var(--danger);" id="stat-urgent">0</div></div>
-      <div class="stat-card" style="border-left: 4px solid var(--primary);"><div class="stat-title">Courses Taught</div><div class="stat-val" style="color:var(--primary);" id="course-count">0</div></div>
+      <div class="stat-card" style="border-left: 4px solid var(--primary);"><div class="stat-title">Subjects Teaching</div><div class="stat-val" style="color:var(--primary);" id="course-count">0</div></div>
+      <div class="stat-card" style="border-left: 4px solid var(--danger);"><div class="stat-title">Needs Attention</div><div class="stat-val" style="color:var(--danger);" id="stat-urgent">0</div></div>
     </div>
 
     <div class="content-grid">
       <div class="panel">
-        <h2>Needs Grading</h2>
-        <div id="dash-grading" class="activity-feed"></div>
-      </div>
-      <div class="panel">
-        <h2 style="color: var(--danger);">Student Questions</h2>
+        <h2 style="color: var(--danger);">Needs Attention</h2>
+        <p style="font-size: 13px; color: var(--text-2); margin-bottom: 10px;">Unanswered questions from subjects you teach.</p>
         <div id="urgent-container" style="display:grid; gap:10px;"></div>
+      </div>
+
+      <div class="panel">
+        <h2 style="color: #4CAF50;">Verify Peer Answers</h2>
+        <p style="font-size: 13px; color: var(--text-2); margin-bottom: 10px;">Review and officially verify correct student answers.</p>
+        <div id="verify-container" style="display:grid; gap:10px; max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
       </div>
     </div>
   </div>
@@ -74,32 +72,33 @@
   <div id="view-enrollment" class="view-section">
     <div class="panel">
       <h2>Teaching Roster Selection</h2>
-      <p style="color: var(--text-2); margin-bottom: 20px;">Enroll in the courses you are teaching to manage assignments and chat.</p>
-      <div id="enrollment-container" style="display: grid; gap: 10px;">Loading courses...</div>
+      <p style="color: var(--text-2); margin-bottom: 20px;">Enroll in subjects to manage their Assignments, Quizzes, and Q&A.</p>
+      <div id="enrollment-container" style="display: grid; gap: 10px;">Loading subjects...</div>
     </div>
   </div>
 
   <div id="view-resources" class="view-section">
     <div class="panel">
-      <h2>Upload Course Material</h2>
-      <input type="text" id="r-title" placeholder="Document Title" required>
-      <input type="text" id="r-course" placeholder="Course ID (e.g. CS101)" required>
-      <button class="btn-gold" onclick="alert('Upload functionality connected via Admin Panel for security in this version.')">Upload File</button>
+      <h2>Upload Subject Material</h2>
+      <form id="teacherUploadForm" style="display: flex; flex-direction: column; gap: 15px;">
+        <input type="text" id="r-title" placeholder="Document Title" required>
+        <select id="r-course" class="course-selector"></select>
+        <input type="file" id="r-file" required style="border:none; padding:10px 0; color: white;">
+        <button type="button" id="btn-teacher-upload" class="btn-gold" onclick="uploadResource()">Upload File from PC</button>
+      </form>
     </div>
   </div>
 
   <div id="view-assignments" class="view-section">
     <div class="panel">
       <h2>Deploy New Assignment</h2>
-      <input type="text" id="a-title" placeholder="Assignment Title">
-      <input type="text" id="a-course" placeholder="Course ID">
-      <textarea id="a-desc" rows="3" placeholder="Assignment Description"></textarea>
-      <input type="datetime-local" id="a-deadline" style="color: black;">
-      <button class="btn-gold" onclick="postAssignment()">Deploy Assignment</button>
-    </div>
-    <div class="panel" style="margin-top: 20px;">
-      <h2>Deployed Assignments</h2>
-      <div id="teacher-assignments-container" style="display: grid; gap: 10px;"></div>
+      <div style="display: flex; flex-direction: column; gap: 15px;">
+        <input type="text" id="a-title" placeholder="Assignment Title">
+        <select id="a-course" class="course-selector"></select>
+        <textarea id="a-desc" rows="3" placeholder="Assignment Description"></textarea>
+        <input type="datetime-local" id="a-deadline" style="color: black; padding: 10px; border-radius: 8px;">
+        <button class="btn-gold" onclick="postAssignment()">Deploy Assignment</button>
+      </div>
     </div>
   </div>
 
@@ -107,11 +106,13 @@
     <div class="content-grid">
       <div class="panel">
         <h2>Schedule Live Session</h2>
-        <input type="text" id="v-topic" placeholder="Session Topic">
-        <input type="text" id="v-subject" placeholder="Course/Subject">
-        <input type="datetime-local" id="v-time" style="color: black;">
-        <input type="url" id="v-link" placeholder="Meeting Link (Zoom/Meet)">
-        <button class="btn-gold" onclick="scheduleSession()">Schedule</button>
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+          <input type="text" id="v-topic" placeholder="Session Topic">
+          <select id="v-course" class="course-selector"></select>
+          <input type="datetime-local" id="v-time" style="color: black; padding: 10px; border-radius: 8px;">
+          <input type="url" id="v-link" placeholder="Meeting Link (Zoom/Meet)">
+          <button class="btn-gold" onclick="scheduleSession()">Schedule Session</button>
+        </div>
       </div>
       <div class="panel">
         <h2>My Scheduled Sessions</h2>
@@ -124,146 +125,216 @@
     <div class="panel">
       <h2>Quiz Architect</h2>
       <div style="display:flex; gap:10px;">
-        <input type="text" id="qz-title" placeholder="Quiz Title">
-        <input type="text" id="qz-subject" placeholder="Course ID" style="max-width: 150px;">
+        <input type="text" id="qz-title" placeholder="Quiz Title" style="flex:2;">
+        <select id="qz-course" class="course-selector" style="flex:1;"></select>
         <input type="number" id="qz-duration" placeholder="Mins" style="max-width: 150px;">
       </div>
+
       <div id="qz-questions-list" style="margin: 20px 0;">
-        <div class="item-card quiz-question-card" style="flex-direction: column; align-items: stretch;">
-          <input type="text" class="q-text" placeholder="Question Text">
+        <div class="item-card quiz-question-card" style="flex-direction: column; align-items: stretch; background: rgba(0,0,0,0.3);">
+          <input type="text" class="q-text" placeholder="Question Text" style="background: rgba(0,0,0,0.5);">
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top: 10px;">
             <input type="text" class="q-optA" placeholder="Option A"><input type="text" class="q-optB" placeholder="Option B">
             <input type="text" class="q-optC" placeholder="Option C"><input type="text" class="q-optD" placeholder="Option D">
           </div>
-          <select class="q-correct" style="margin-top: 10px;"><option value="A">Answer: A</option><option value="B">Answer: B</option><option value="C">Answer: C</option><option value="D">Answer: D</option></select>
+          <select class="q-correct" style="margin-top: 10px; background: rgba(0,0,0,0.5);"><option value="A">Answer: A</option><option value="B">Answer: B</option><option value="C">Answer: C</option><option value="D">Answer: D</option></select>
         </div>
       </div>
-      <button class="btn-action" onclick="addQuestionBlock()">+ Question</button>
-      <button class="btn-gold" onclick="deployQuiz()" style="float: right;">Deploy Quiz</button>
+
+      <div style="display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+        <button class="btn-action" onclick="addQuestionBlock()">+ Add Question</button>
+        <button class="btn-gold" onclick="deployQuiz()"><i class="fa-solid fa-paper-plane"></i> Deploy Quiz</button>
+      </div>
     </div>
   </div>
+
 </div>
 
 <script>
   const user = JSON.parse(localStorage.getItem('hive_user'));
   if (!user || user.role !== 'teacher') window.location.href = "index.html";
 
-  let activeCourseId = null;
   let enrolledCourseIds = [];
 
   document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.name}`;
 
   function switchTab(tabId, element) {
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      element.classList.add('active');
+      if(element) element.classList.add('active');
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
       document.getElementById('view-' + tabId).classList.add('active');
 
       if(tabId === 'enrollment') fetchAllCoursesForEnrollment();
       if(tabId === 'dashboard') loadDashboard();
-      if(tabId === 'assignments') fetchTeacherAssignments();
       if(tabId === 'sessions') fetchSessions();
   }
 
-  function goToChat() {
-      if(!activeCourseId) { alert("Please select a teaching module."); return switchTab('enrollment', document.getElementById('nav-enrollment')); }
-      localStorage.setItem('chat_context_id', activeCourseId); window.location.href = 'chat.html';
-  }
-
+  // --- ENROLLMENT & SUBJECTS ---
   async function loadUserCourses() {
       const res = await fetch(`/api/hive/users/${user.id}/courses`);
       const courses = await res.json();
       enrolledCourseIds = courses.map(c => c.id);
+
       document.getElementById('course-count').innerText = courses.length;
 
-      const selector = document.getElementById('active-course-selector');
-      if(courses.length > 0) {
-          selector.innerHTML = courses.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
-          activeCourseId = courses[0].id;
-      } else { selector.innerHTML = '<option value="">No Courses (Go to Selection)</option>'; }
+      // Populate Dropdowns in forms
+      const opts = courses.map(c => `<option value="${c.title}">${c.title}</option>`).join('');
+      if(document.getElementById('r-course')) document.getElementById('r-course').innerHTML = opts;
+      if(document.getElementById('a-course')) document.getElementById('a-course').innerHTML = opts;
+      if(document.getElementById('v-course')) document.getElementById('v-course').innerHTML = opts;
+
+      // For Quiz, we need ID instead of title
+      const optsId = courses.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+      if(document.getElementById('qz-course')) document.getElementById('qz-course').innerHTML = optsId;
+
       loadDashboard();
   }
-  function changeActiveCourse() { activeCourseId = document.getElementById('active-course-selector').value; }
 
   async function fetchAllCoursesForEnrollment() {
-      const res = await fetch('/api/hive/courses');
+      const res = await fetch('/api/hive/courses'); // Fetches Subjects
       const allCourses = await res.json();
-      document.getElementById('enrollment-container').innerHTML = allCourses.map(c => `
+      document.getElementById('enrollment-container').innerHTML = allCourses.map(c => {
+          const isEnrolled = enrolledCourseIds.includes(c.id);
+          return `
           <div class="item-card">
               <div><strong>${c.title}</strong> (${c.courseCode})</div>
-              ${enrolledCourseIds.includes(c.id)
+              ${isEnrolled
                 ? `<button class="btn-action" disabled style="color:var(--primary); border-color:var(--primary);">Teaching <i class="fa-solid fa-check"></i></button>`
                 : `<button class="btn-gold" onclick="enrollCourse(${c.id})">Add to Roster</button>`}
-          </div>`).join('');
+          </div>`;
+      }).join('') || "No subjects available in the system.";
   }
 
   async function enrollCourse(cId) {
       await fetch(`/api/hive/courses/${cId}/enroll`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({userId: user.id, role: user.role}) });
-      alert("Added to roster!"); loadUserCourses(); fetchAllCoursesForEnrollment();
+      alert("Subject added to your teaching roster!");
+      loadUserCourses(); fetchAllCoursesForEnrollment();
   }
 
+  // --- DASHBOARD DATA (UPDATED WITH VERIFY) ---
   async function loadDashboard() {
       try {
           const res = await fetch('/api/hive/questions');
           let data = await res.json();
-          data = data.filter(q => enrolledCourseIds.includes(q.courseId) && !q.answered);
-          document.getElementById('stat-urgent').innerText = data.length;
-          document.getElementById('urgent-container').innerHTML = data.map(q => `
-              <div class="item-card" style="border-left: 4px solid var(--danger);">
-                  <div><strong>${q.title}</strong><br><span style="font-size:12px;">By: ${q.authorName}</span></div>
-                  <button class="btn-action" onclick="answerPrompt(${q.id})">Reply</button>
+
+          // 1. Unanswered Questions
+          const unanswered = data.filter(q => enrolledCourseIds.includes(q.courseId) && !q.answered);
+          document.getElementById('stat-urgent').innerText = unanswered.length;
+
+          document.getElementById('urgent-container').innerHTML = unanswered.map(q => `
+              <div class="item-card" style="border-left: 4px solid var(--danger); flex-direction:column; align-items:start;">
+                  <div><strong>${q.title}</strong><br><span style="font-size:12px;">By: ${q.authorName} | Topic: ${q.subject}</span></div>
+                  <button class="btn-action" style="border-color:var(--primary); color:var(--primary); margin-top:10px;" onclick="answerPrompt(${q.id})"><i class="fa-solid fa-reply"></i> Reply to Student</button>
               </div>
-          `).join('') || "No unanswered questions for your courses.";
+          `).join('') || "No urgent queries.";
+
+          // 2. Answered Questions for Verification
+          const answered = data.filter(q => enrolledCourseIds.includes(q.courseId) && q.answered);
+          document.getElementById('verify-container').innerHTML = answered.map(q => `
+              <div class="item-card" style="border-left: 4px solid #4CAF50; flex-direction:column; align-items:start;">
+                  <div><strong>${q.title}</strong><br><span style="font-size:12px;">Topic: ${q.subject}</span></div>
+                  <div style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:4px; font-size:13px; width: 100%;">
+                      <strong>Peer Answer:</strong><br>${q.answerText}
+                  </div>
+                  <button class="btn-action" style="border-color:#4CAF50; color:#4CAF50; margin-top:10px;" onclick="verifyAnswer(${q.id})"><i class="fa-solid fa-check-double"></i> Verify Answer</button>
+              </div>
+          `).join('') || "No peer answers to verify.";
+
       } catch(e) {}
   }
 
   async function answerPrompt(id) {
       const ans = prompt("Enter Faculty Response:");
-      if(ans) {
+      if(ans && ans.trim() !== "") {
           await fetch(`/api/hive/questions/${id}/answers`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text: ans, authorName: user.name + " (Faculty)"}) });
           loadDashboard();
       }
   }
 
-  async function postAssignment() {
-      const payload = { title: document.getElementById('a-title').value, course: document.getElementById('a-course').value, description: document.getElementById('a-desc').value, deadline: document.getElementById('a-deadline').value, teacherName: user.name };
-      await fetch('/api/hive/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      alert("Deployed!"); fetchTeacherAssignments();
+  // 🟢 NEW: Verify Answer Logic
+  async function verifyAnswer(questionId) {
+      if(confirm("Officially verify this peer answer as correct? It will be highlighted for all students.")) {
+          await fetch(`/api/hive/answers/${questionId}/verify`, { method: 'POST' });
+          alert("Answer Verified! A green checkmark will now appear for all students.");
+          loadDashboard();
+      }
   }
 
-  async function fetchTeacherAssignments() {
-      const res = await fetch('/api/hive/assignments/all');
-      const data = await res.json();
-      document.getElementById('teacher-assignments-container').innerHTML = data.map(a => `
-          <div class="item-card"><div><strong>${a.title}</strong><br><small>${a.course} | Due: ${a.deadline}</small></div></div>
-      `).join('') || "No assignments.";
+  // --- REAL FILE UPLOADS ---
+  async function uploadResource() {
+      const fileInput = document.getElementById('r-file');
+      if(!fileInput.files.length) return alert("Please select a file from your PC.");
+
+      const btn = document.getElementById('btn-teacher-upload');
+      btn.innerText = "Uploading...";
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+      formData.append("title", document.getElementById('r-title').value);
+      formData.append("course", document.getElementById('r-course').value);
+      formData.append("postedBy", user.name);
+
+      try {
+          const res = await fetch('/api/hive/resources/upload', { method: 'POST', body: formData });
+          if(res.ok) {
+              alert("File successfully uploaded!");
+              document.getElementById('teacherUploadForm').reset();
+          } else { alert("Upload failed."); }
+      } catch(e) { alert("Server error during upload."); }
+
+      btn.innerText = "Upload File from PC";
+  }
+
+  // --- ACTIONS ---
+  async function postAssignment() {
+      const payload = {
+          title: document.getElementById('a-title').value,
+          course: document.getElementById('a-course').value,
+          description: document.getElementById('a-desc').value,
+          deadline: document.getElementById('a-deadline').value,
+          teacherName: user.name
+      };
+      await fetch('/api/hive/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      alert("Assignment Deployed Successfully!");
   }
 
   async function scheduleSession() {
-      const payload = { topic: document.getElementById('v-topic').value, subject: document.getElementById('v-subject').value, scheduledTime: document.getElementById('v-time').value, meetingLink: document.getElementById('v-link').value, host: user.name };
+      const payload = {
+          topic: document.getElementById('v-topic').value,
+          subject: document.getElementById('v-course').value,
+          scheduledTime: document.getElementById('v-time').value,
+          meetingLink: document.getElementById('v-link').value,
+          host: user.name
+      };
       await fetch('/api/hive/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      alert("Scheduled!"); fetchSessions();
+      alert("Live Session Scheduled!");
+      fetchSessions();
   }
 
   async function fetchSessions() {
-      const data = await (await fetch('/api/hive/sessions')).json();
-      document.getElementById('sessions-container').innerHTML = data.map(s => `<div class="item-card"><div><strong>${s.topic}</strong><br><small>${s.scheduledTime}</small></div></div>`).join('') || "No active sessions.";
+      const res = await fetch('/api/hive/sessions');
+      const data = await res.json();
+      const mySessions = data.filter(s => s.host === user.name);
+      document.getElementById('sessions-container').innerHTML = mySessions.map(s => `
+          <div class="item-card"><div><strong>${s.topic}</strong><br><small>${s.scheduledTime} | Subject: ${s.subject}</small></div></div>
+      `).join('') || "No sessions scheduled.";
   }
 
   function addQuestionBlock() {
-      const div = document.createElement('div'); div.className = "item-card quiz-question-card"; div.style.cssText = "flex-direction: column; align-items: stretch;";
-      div.innerHTML = `<input type="text" class="q-text" placeholder="Question Text"><div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top: 10px;"><input type="text" class="q-optA" placeholder="Option A"><input type="text" class="q-optB" placeholder="Option B"><input type="text" class="q-optC" placeholder="Option C"><input type="text" class="q-optD" placeholder="Option D"></div><select class="q-correct" style="margin-top: 10px;"><option value="A">Answer: A</option><option value="B">Answer: B</option><option value="C">Answer: C</option><option value="D">Answer: D</option></select>`;
+      const div = document.createElement('div'); div.className = "item-card quiz-question-card"; div.style.cssText = "flex-direction: column; align-items: stretch; background: rgba(0,0,0,0.3);";
+      div.innerHTML = `<input type="text" class="q-text" placeholder="Question Text" style="background: rgba(0,0,0,0.5);"><div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top: 10px;"><input type="text" class="q-optA" placeholder="Option A"><input type="text" class="q-optB" placeholder="Option B"><input type="text" class="q-optC" placeholder="Option C"><input type="text" class="q-optD" placeholder="Option D"></div><select class="q-correct" style="margin-top: 10px; background: rgba(0,0,0,0.5);"><option value="A">Answer: A</option><option value="B">Answer: B</option><option value="C">Answer: C</option><option value="D">Answer: D</option></select>`;
       document.getElementById('qz-questions-list').appendChild(div);
   }
 
   async function deployQuiz() {
       const cards = document.querySelectorAll('.quiz-question-card');
-      const payload = { title: document.getElementById('qz-title').value, subject: document.getElementById('qz-subject').value, durationMinutes: parseInt(document.getElementById('qz-duration').value) || 10, teacherName: user.name, questions: [] };
+      const subjectId = document.getElementById('qz-course').value;
+      const payload = { title: document.getElementById('qz-title').value, subject: subjectId, durationMinutes: parseInt(document.getElementById('qz-duration').value) || 10, teacherName: user.name, questions: [] };
       cards.forEach(card => {
           payload.questions.push({ questionText: card.querySelector('.q-text').value, optA: card.querySelector('.q-optA').value, optB: card.querySelector('.q-optB').value, optC: card.querySelector('.q-optC').value, optD: card.querySelector('.q-optD').value, correctOpt: card.querySelector('.q-correct').value });
       });
       await fetch('/api/quizzes/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      alert("Quiz Deployed!");
+      alert("Quiz Deployed to Students!");
   }
 
   function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
