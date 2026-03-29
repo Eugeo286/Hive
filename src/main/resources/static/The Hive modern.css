@@ -1,0 +1,209 @@
+/* =========================================================================
+   The Hive Modern Background Styles
+   This stylesheet enhances the background appearance of The Hive
+   without affecting the core layout or functionality.
+   ========================================================================= */
+
+/* --- Define Modern Gradient & Pattern Colors (CSS Variables) --- */
+:root {
+    /* Colors for Option 1: Modern Gradient (Light Mode) */
+    --hive-light-gradient-1: #4facfe; /* Vibrant blue */
+    --hive-light-gradient-2: #00f2fe; /* Vibrant cyan */
+    --hive-light-gradient-3: #ff00de; /* Vibrant magenta */
+    --hive-soft-pattern-opacity: 0.15;
+
+    /* Colors for Option 3: Futuristic Learning (Dark Mode) */
+    --hive-dark-bg-base: #000c24; /* Deep blue-black */
+    --hive-dark-bg-pattern: rgba(0, 242, 254, 0.05); /* Soft glowing grid */
+    --hive-glowing-cyan: #00f2fe;
+    --hive-glowing-magenta: #ff00de;
+}
+
+/* --- Global Reset & Body Prep --- */
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-x: hidden;
+    position: relative;
+    font-family: Arial, sans-serif; /* Fallback */
+    transition: background-color 0.5s ease;
+}
+
+/* --- Preserve Content Readability --- */
+/* Your original code's containers (cards) must remain dark to keep light text readable.
+   We reinforce this style here to work on both light and dark backgrounds.
+   Containers include your login card and dashboard panels. */
+.reset-password-container,
+.command-center-container,
+.overseer-panel,
+.global-resources-container,
+.card-container, /* Add any specific classes for cards from your original code */
+.moderation-panel {
+    background: rgba(30, 20, 10, 0.95); /* Original dark card background from your code */
+    border: 1px solid #4a3820; /* Original border style */
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    transition: background 0.5s ease, border-color 0.5s ease;
+}
+
+/* =========================================================================
+   Option 3: Futuristic Learning (Dark Mode)
+   This is your default background and refined theme.
+   ========================================================================= */
+
+/* Use body or body.dark-mode for this style */
+body, body.dark-mode {
+    background-color: var(--hive-dark-bg-base);
+}
+
+/* Dark Mode Grid Pattern Overlay */
+body::before, body.dark-mode::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Create glowing network grid pattern from Option 3 */
+    background:
+        linear-gradient(90deg, var(--hive-dark-bg-pattern) 1px, transparent 1px),
+        linear-gradient(var(--hive-dark-bg-pattern) 1px, transparent 1px);
+    background-size: 60px 60px;
+    background-color: var(--hive-dark-bg-base);
+    z-index: -2;
+    transition: opacity 0.5s ease, background-image 0.5s ease, background-color 0.5s ease;
+}
+
+/* Add subtle glowing highlights like Option 3 */
+body::after, body.dark-mode::after {
+    content: "";
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, transparent 30%, rgba(0, 242, 254, 0.03) 70%);
+    z-index: -1;
+    opacity: 0.1;
+    animation: glowShift 20s infinite linear;
+}
+
+@keyframes glowShift {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* =========================================================================
+   Option 1: Modern Gradient (Light Mode)
+   This vibrant style activates when you add 'light-mode' to the <body> element.
+   ========================================================================= */
+
+body.light-mode {
+    background-color: #fefefe; /* Pure light base */
+}
+
+/* Switch from grid pattern to smooth vibrant gradient overlay */
+body.light-mode::before {
+    background-image: none; /* Hide dark grid */
+    background-color: transparent;
+    /* Add vibrant background like Option 1 from references */
+    background:
+        radial-gradient(circle at 15% 15%, rgba(106, 17, 203, 0.25), transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(37, 117, 252, 0.25), transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.6), transparent 100%);
+    opacity: 1; /* Show gradient on light mode */
+}
+
+/* Remove dark glow from after pseudo-element */
+body.light-mode::after {
+    background: none;
+    opacity: 0;
+}
+
+/* Option 1: Light Mode Floating Organic Shapes */
+/* Create soft, geometric organic patterns that float on the light background like Option 1. */
+body.light-mode .light-soft-pattern {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+/* Soft shape colors from references */
+body.light-mode .light-soft-pattern .shape {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(30px);
+    opacity: 0.15;
+}
+
+body.light-mode .light-soft-pattern .shape-1 {
+    width: 700px;
+    height: 700px;
+    background-color: var(--hive-light-gradient-1); /* blue */
+    top: -10%;
+    left: -10%;
+    animation: floatShape1 25s infinite alternate ease-in-out;
+}
+
+body.light-mode .light-soft-pattern .shape-2 {
+    width: 600px;
+    height: 600px;
+    background-color: var(--hive-light-gradient-3); /* magenta/purple */
+    bottom: -10%;
+    right: -10%;
+    animation: floatShape2 30s infinite alternate ease-in-out;
+}
+
+body.light-mode .light-soft-pattern .shape-3 {
+    width: 400px;
+    height: 400px;
+    background-color: var(--hive-light-gradient-2); /* cyan */
+    top: 40%;
+    left: 60%;
+    animation: floatShape3 20s infinite alternate ease-in-out;
+}
+
+@keyframes floatShape1 {
+    from { transform: translate(0, 0); }
+    to { transform: translate(150px, 150px); }
+}
+@keyframes floatShape2 {
+    from { transform: translate(0, 0); }
+    to { transform: translate(-150px, -150px); }
+}
+@keyframes floatShape3 {
+    from { transform: translate(0, 0); }
+    to { transform: translate(100px, -100px); }
+}
+
+/* =========================================================================
+   Implementation in HTML for Light Mode
+   ========================================================================= */
+
+/* To activate Light Mode (Option 1), add the following HTML structure
+   at the very beginning of your <body> element.
+   This div contains the soft shapes, and you control the theme by adding
+   'light-mode' to the <body> tag.
+
+   Example Implementation in HTML:
+   -------------------------------
+   <body class="light-mode"> <div class="light-soft-pattern">
+       <div class="shape shape-1"></div>
+       <div class="shape shape-2"></div>
+       <div class="shape shape-3"></div>
+   </div>
+
+   ... your original code ...
+
+   </body>
+*/
