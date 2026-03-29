@@ -21,6 +21,7 @@ body.light-mode {
     --glass-sidebar: rgba(255, 255, 255, 0.75);
     --glass-border: rgba(255, 255, 255, 0.5);
     --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+
 }
 
 body.midnight-mode {
@@ -28,6 +29,38 @@ body.midnight-mode {
     --glass-bg: rgba(15, 23, 42, 0.45);
     --glass-sidebar: rgba(11, 15, 25, 0.6);
     --glass-border: rgba(56, 189, 248, 0.15);
+}
+
+/* THEME 4: CYBERPUNK (Neon Pink & Purple) */
+body.cyber-mode {
+    --text: #FDF8EE; --text-2: #A78BFA; --gold: #F472B6; --gold-l: #D946EF; --amber: #9333EA; --primary: #EC4899;
+    --glass-bg: rgba(15, 5, 25, 0.35); /* Super transparent dark purple */
+    --glass-sidebar: rgba(10, 2, 18, 0.45);
+    --glass-border: rgba(244, 114, 182, 0.25); /* Pink glass shine */
+
+    background-color: #090212 !important;
+    background-image:
+        radial-gradient(circle at 10% 80%, rgba(236, 72, 153, 0.55), transparent 45%),
+        radial-gradient(circle at 90% 20%, rgba(139, 92, 246, 0.55), transparent 45%),
+        linear-gradient(rgba(139, 92, 246, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(139, 92, 246, 0.15) 1px, transparent 1px) !important;
+    background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px !important;
+    background-attachment: fixed !important;
+}
+
+/* THEME 5: AURORA (Emerald & Cyan) */
+body.aurora-mode {
+    --text: #FDF8EE; --text-2: #6EE7B7; --gold: #10B981; --gold-l: #34D399; --amber: #059669; --primary: #10B981;
+    --glass-bg: rgba(2, 20, 15, 0.35); /* Super transparent dark green */
+    --glass-sidebar: rgba(1, 12, 9, 0.45);
+    --glass-border: rgba(16, 185, 129, 0.25); /* Emerald glass shine */
+
+    background-color: #02120d !important;
+    background-image:
+        radial-gradient(circle at 0% 40%, rgba(16, 185, 129, 0.55), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.55), transparent 55%),
+        radial-gradient(circle at 60% 0%, rgba(52, 211, 153, 0.35), transparent 40%) !important;
+    background-attachment: fixed !important;
 }
 
 body {
