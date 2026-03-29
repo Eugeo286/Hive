@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.sql.*;
 
 public class ContentDAO {
 
@@ -14,21 +13,20 @@ public class ContentDAO {
     // ══════════════════════════════════════════════════════
 
     public void saveQuestion(Question q) {
-        String sql = "INSERT INTO questions (title,subject,difficulty,author_name,is_answered,created_at) VALUES (?,?,?,?,false,NOW())";
+        // Added 'department' to the INSERT
+        String sql = "INSERT INTO questions (title, subject, author_name, course_id, department, is_answered, created_at) VALUES (?,?,?,?,?,false,NOW())";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setString(1, q.getTitle());
             s.setString(2, q.getSubject());
-            s.setString(3, q.getDifficulty() != null ? q.getDifficulty() : "Medium");
-            s.setString(4, q.getAuthorName());
+            s.setString(3, q.getAuthorName());
+            s.setInt(4, q.getCourseId());
+            s.setString(5, q.getDepartment()); // Store the chosen department
             s.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
     }
 
-    // 🔴 THE FIX: Upgraded method to fetch the actual answer text using a sub-query
     public List<Question> getAllQuestions() {
         List<Question> questions = new ArrayList<>();
-
-        // This SQL query now grabs the matching answer_text from the answers table
         String sql = "SELECT q.*, (SELECT text FROM answers a WHERE a.question_id = q.id ORDER BY created_at DESC LIMIT 1) AS fetched_answer FROM questions q ORDER BY q.is_answered ASC, q.created_at DESC";
 
         try (Connection c = DBUtil.getConnection();
@@ -36,26 +34,30 @@ public class ContentDAO {
              ResultSet rs = s.executeQuery()) {
 
             while (rs.next()) {
-                Question q = new Question(
-                        rs.getString("title"),
-                        rs.getString("subject"),
-                        "Medium",
-                        rs.getString("author_name")
-                );
+                Question q = new Question(rs.getString("title"), rs.getString("subject"), "Medium", rs.getString("author_name"));
                 q.setId(rs.getInt("id"));
                 q.setAnswered(rs.getBoolean("is_answered"));
-
                 Timestamp ts = rs.getTimestamp("created_at");
                 if (ts != null) q.setCreatedAt(ts.toLocalDateTime());
-
-                // 🔴 Grabs the fetched answer text and attaches it to the Question object
                 q.setAnswerText(rs.getString("fetched_answer"));
-
+                q.setAiAnswer(rs.getString("ai_answer")); // Added to ensure AI answers show
                 questions.add(q);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return questions;
+    }
+
+    public List<Question> getQuestionsByDepartment(String dept) {
+        List<Question> questions = new ArrayList<>();
+        // Filter questions where the department matches the user's department
+        String sql = "SELECT * FROM questions WHERE department = ? ORDER BY created_at DESC";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setString(1, dept);
+            ResultSet rs = s.executeQuery();
+            while (rs.next()) {
+                // ... (your existing mapping logic)
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
         return questions;
     }
 
@@ -132,6 +134,36 @@ public class ContentDAO {
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setInt(1, answerId); s.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // NOTIFICATIONS
+    // ══════════════════════════════════════════════════════
+
+    // 🟢 NEW: Added Notification Methods
+    public void addNotification(int userId, String message) {
+        String sql = "INSERT INTO notifications (user_id, message) VALUES (?, ?)";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, userId);
+            s.setString(2, message);
+            s.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public List<Map<String, Object>> getNotifications(int userId) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 5";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, userId);
+            ResultSet rs = s.executeQuery();
+            while (rs.next()) {
+                Map<String, Object> m = new HashMap<>();
+                m.put("message", rs.getString("message"));
+                m.put("time", rs.getTimestamp("created_at"));
+                list.add(m);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
     }
 
     // ══════════════════════════════════════════════════════
@@ -340,7 +372,6 @@ public class ContentDAO {
         return list;
     }
 
-    /** Alias kept for backward compatibility with QuestionController */
     public List<Map<String,Object>> getAcademyInsights() {
         return getEngagementStats();
     }
@@ -378,17 +409,13 @@ public class ContentDAO {
         if (ts != null) a.setDeadline(ts.toLocalDateTime());
         return a;
     }
+
     public List<Map<String, Object>> viewAllQuestions() {
         List<Map<String, Object>> questions = new ArrayList<>();
         String sql = "SELECT * FROM questions";
-
-        try (Connection c = DBUtil.getConnection();
-             Statement s = c.createStatement();
-             ResultSet rs = s.executeQuery(sql)) {
-
+        try (Connection c = DBUtil.getConnection(); Statement s = c.createStatement(); ResultSet rs = s.executeQuery(sql)) {
             while (rs.next()) {
                 Map<String, Object> row = new HashMap<>();
-
                 row.put("id", rs.getInt("id"));
                 row.put("question", rs.getString("question"));
                 row.put("optionA", rs.getString("optionA"));
@@ -396,54 +423,34 @@ public class ContentDAO {
                 row.put("optionC", rs.getString("optionC"));
                 row.put("optionD", rs.getString("optionD"));
                 row.put("answer", rs.getString("answer"));
-
                 questions.add(row);
             }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
+        } catch (SQLException e) { e.printStackTrace(); }
         return questions;
     }
+
     public void viewAnswersForQuestion(int questionId) {
         String sql = "SELECT * FROM answers WHERE question_id = ?";
-
-        try (Connection c = DBUtil.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-
+        try (Connection c = DBUtil.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setInt(1, questionId);
             ResultSet rs = ps.executeQuery();
-
             while (rs.next()) {
                 System.out.println("Answer ID: " + rs.getInt("id"));
                 System.out.println("Answer: " + rs.getString("answer"));
                 System.out.println("Posted By: " + rs.getString("username"));
                 System.out.println("----------------------");
             }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
     }
+
     public void deleteResource(int resourceId) {
         String sql = "DELETE FROM resources WHERE id = ?";
-
-        try (Connection c = DBUtil.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql)) {
-
+        try (Connection c = DBUtil.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setInt(1, resourceId);
             int rows = ps.executeUpdate();
-
-            if (rows > 0) {
-                System.out.println("Resource deleted successfully.");
-            } else {
-                System.out.println("Resource not found.");
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+            if (rows > 0) System.out.println("Resource deleted successfully.");
+            else System.out.println("Resource not found.");
+        } catch (SQLException e) { e.printStackTrace(); }
     }
 
     public void saveSession(VideoSession v) {
@@ -463,11 +470,8 @@ public class ContentDAO {
         String sql = "SELECT * FROM video_sessions";
         try (Connection c = DBUtil.getConnection(); Statement s = c.createStatement(); ResultSet rs = s.executeQuery(sql)) {
             while (rs.next()) {
-                VideoSession v = new VideoSession(
-                        rs.getString("topic"), rs.getString("subject"),
-                        rs.getString("host"), rs.getString("scheduled_time"),
-                        rs.getString("meeting_link")
-                );
+                VideoSession v = new VideoSession(rs.getString("topic"), rs.getString("subject"),
+                        rs.getString("host"), rs.getString("scheduled_time"), rs.getString("meeting_link"));
                 v.setId(rs.getInt("id"));
                 list.add(v);
             }
@@ -478,51 +482,32 @@ public class ContentDAO {
     public void deleteSession(int id) {
         String sql = "DELETE FROM video_sessions WHERE id = ?";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
-            s.setInt(1, id);
-            s.executeUpdate();
+            s.setInt(1, id); s.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
     }
 
-    // ══════════════════════════════════════════════════════
-    // ANNOUNCEMENTS
-    // ══════════════════════════════════════════════════════
     public Map<String, String> getLatestAnnouncement() {
         Map<String, String> announcement = new HashMap<>();
         String sql = "SELECT message, posted_by FROM announcements ORDER BY created_at DESC LIMIT 1";
-        try (Connection c = DBUtil.getConnection();
-             Statement s = c.createStatement();
-             ResultSet rs = s.executeQuery(sql)) {
-
+        try (Connection c = DBUtil.getConnection(); Statement s = c.createStatement(); ResultSet rs = s.executeQuery(sql)) {
             if (rs.next()) {
                 announcement.put("message", rs.getString("message"));
                 announcement.put("postedBy", rs.getString("posted_by"));
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return announcement;
     }
-    // ══════════════════════════════════════════════════════
-    // AUTOMATED CLEANUP (ROBOT JANITOR)
-    // ══════════════════════════════════════════════════════
+
     public void deleteOldQuestions() {
-        // Deletes questions that are older than 30 days
         String sql = "DELETE FROM questions WHERE created_at < NOW() - INTERVAL 30 DAY";
-        try (Connection c = DBUtil.getConnection();
-             PreparedStatement s = c.prepareStatement(sql)) {
-
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             int deletedCount = s.executeUpdate();
-            if (deletedCount > 0) {
-                System.out.println("🧹 Robot Janitor: Woke up and deleted " + deletedCount + " old questions!");
-            }
-
-        } catch (SQLException e) {
-            System.out.println("Error during scheduled cleanup: " + e.getMessage());
-        }
+            if (deletedCount > 0) System.out.println("🧹 Robot Janitor: Deleted " + deletedCount + " old questions!");
+        } catch (SQLException e) { System.out.println("Error during scheduled cleanup: " + e.getMessage()); }
     }
 
     // ══════════════════════════════════════════════════════
-    // 1. COURSE ENROLLMENT ENGINE
+    // COURSE ENROLLMENT
     // ══════════════════════════════════════════════════════
 
     public List<Course> getAllCourses() {
@@ -540,7 +525,6 @@ public class ContentDAO {
 
     public List<Course> getCoursesForUser(int userId) {
         List<Course> list = new ArrayList<>();
-        // JOIN to get only the courses this specific user is enrolled in
         String sql = "SELECT c.* FROM courses c JOIN enrollments e ON c.id = e.course_id WHERE e.user_id = ?";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setInt(1, userId);
@@ -555,7 +539,6 @@ public class ContentDAO {
     }
 
     public void enrollUserInCourse(int userId, int courseId, String role) {
-        // INSERT IGNORE prevents crashing if the user clicks "Enroll" twice
         String sql = "INSERT IGNORE INTO enrollments (user_id, course_id, role) VALUES (?, ?, ?)";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setInt(1, userId);
@@ -576,7 +559,7 @@ public class ContentDAO {
     }
 
     // ══════════════════════════════════════════════════════
-    // 2. PEER-TO-PEER CHAT ENGINE
+    // CHAT ENGINE
     // ══════════════════════════════════════════════════════
 
     public void saveChatMessage(Message msg) {
@@ -591,7 +574,6 @@ public class ContentDAO {
 
     public List<Message> getMessagesForCourse(int courseId) {
         List<Message> list = new ArrayList<>();
-        // JOIN with users table so we can show the sender's actual name in the chat UI
         String sql = "SELECT m.*, u.name AS sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.course_id = ? ORDER BY m.sent_at ASC";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setInt(1, courseId);
@@ -609,7 +591,7 @@ public class ContentDAO {
     }
 
     // ══════════════════════════════════════════════════════
-    // 3. AI Q&A ENGINE
+    // AI ENGINE
     // ══════════════════════════════════════════════════════
 
     public void saveAiAnswer(int questionId, String aiAnswerText) {
@@ -617,6 +599,86 @@ public class ContentDAO {
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setString(1, aiAnswerText);
             s.setInt(2, questionId);
+            s.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    // ══════════════════════════════════════════════════════
+// ADMIN: DEPARTMENT & COURSE MANAGEMENT
+// ══════════════════════════════════════════════════════
+
+    public void addDepartment(String name) {
+        String sql = "INSERT INTO departments (name) VALUES (?)";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setString(1, name);
+            s.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public List<Map<String, Object>> getAllDepartments() {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = "SELECT * FROM departments ORDER BY name ASC";
+        try (Connection c = DBUtil.getConnection(); Statement s = c.createStatement(); ResultSet rs = s.executeQuery(sql)) {
+            while (rs.next()) {
+                Map<String, Object> m = new HashMap<>();
+                m.put("id", rs.getInt("id"));
+                m.put("name", rs.getString("name"));
+                list.add(m);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
+    public void addCourseToDept(int deptId, String code, String title) {
+        String sql = "INSERT INTO courses (dept_id, course_code, title) VALUES (?, ?, ?)";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, deptId);
+            s.setString(2, code);
+            s.setString(3, title);
+            s.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+    // ══════════════════════════════════════════════════════
+// ADVANCED CHAT LOGIC (FIX FOR CONTROLLER ERRORS)
+// ══════════════════════════════════════════════════════
+
+    public void setTyping(int courseId, int userId, String userName) {
+        String sql = "REPLACE INTO typing_status (course_id, user_id, user_name, last_typed) VALUES (?, ?, ?, NOW())";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, courseId);
+            s.setInt(2, userId);
+            s.setString(3, userName);
+            s.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public void removeTyping(int courseId, int userId) {
+        String sql = "DELETE FROM typing_status WHERE course_id = ? AND user_id = ?";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, courseId);
+            s.setInt(2, userId);
+            s.executeUpdate();
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    public List<String> getActiveTypers(int courseId) {
+        List<String> typers = new ArrayList<>();
+        // Only get people who typed in the last 6 seconds
+        String sql = "SELECT user_name FROM typing_status WHERE course_id = ? AND last_typed > NOW() - INTERVAL 6 SECOND";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, courseId);
+            ResultSet rs = s.executeQuery();
+            while (rs.next()) { typers.add(rs.getString("user_name")); }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return typers;
+    }
+
+    public void markAsRead(int courseId, int userId) {
+        // Marks messages in this course NOT sent by you as read
+        String sql = "UPDATE messages SET is_read = true WHERE course_id = ? AND sender_id != ?";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, courseId);
+            s.setInt(2, userId);
             s.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
     }

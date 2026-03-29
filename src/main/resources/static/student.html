@@ -143,11 +143,27 @@
         <h2>Community Questions</h2>
         <div id="questions-container" style="display: grid; gap: 10px;">Loading...</div>
       </div>
-      <div class="panel">
         <h2>Ask the Hive</h2>
+        <select id="q-dept" class="course-selector" style="margin-bottom: 15px;">
+          <option value="" disabled selected>Select Department</option>
+          <option value="Computer Science">Computer Science</option>
+          <option value="Engineering">Engineering</option>
+          <option value="Business">Business</option>
+          <option value="Natural Sciences">Natural Sciences</option>
+        </select>
+
         <input type="text" id="q-title" placeholder="What's your question?">
-        <input type="text" id="q-subject" placeholder="Subject (e.g., Math)">
+        <input type="text" id="q-subject" placeholder="Topic (e.g. Calculus, Java)">
+
+        <button class="btn-gold" style="width:100%; margin-top: 10px;" onclick="postQuestion()">
+          <i class="fa-solid fa-paper-plane"></i> Post Question
+        </button>
+      </div>
+          <div class="panel">
+
+      </select>
         <button class="btn-gold" style="width:100%;" onclick="postQuestion()">Post Question</button>
+
       </div>
     </div>
   </div>
@@ -306,36 +322,21 @@
   }
 
   async function postQuestion() {
-      const title = document.getElementById('q-title').value;
-      const subject = document.getElementById('q-subject').value;
+    const payload = {
+        title: document.getElementById('q-title').value,
+        subject: document.getElementById('q-subject').value,
+        department: document.getElementById('q-dept').value, // Get the department
+        courseId: activeCourseId, // The specific module selected in your top dropdown
+        authorName: user.name
+    };
 
-      if(!title || !subject) return alert("Please fill out both fields!");
-
-      const payload = {
-          title: title,
-          subject: subject,
-          difficulty: "Medium",
-          authorName: user.name
-      };
-
-      try {
-          const res = await fetch('/api/hive/questions', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-          });
-
-          if(res.ok) {
-              document.getElementById('q-title').value = '';
-              document.getElementById('q-subject').value = '';
-              fetchQuestions();
-          } else {
-              alert("Server error posting question.");
-          }
-      } catch(e) {
-          alert("Network error. Cannot reach server.");
-      }
-  }
+    await fetch('/api/hive/questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    fetchQuestions(); // Refresh feed
+}
 
   async function answerPrompt(id) {
       const text = prompt("Enter your answer to help your peer:");
@@ -456,6 +457,14 @@
           }
       } catch (e) { console.error("Failed to load courses"); }
   }
+  async function prepareQuestionForm() {
+    // 1. Fetch Departments for the "Ask" form dropdown
+    const res = await fetch('/api/hive/departments');
+    const depts = await res.json();
+    document.getElementById('q-dept').innerHTML = depts.map(d =>
+        `<option value="${d.name}">${d.name}</option>`
+    ).join('');
+}
 
   function changeActiveCourse() {
       const selector = document.getElementById('active-course-selector');

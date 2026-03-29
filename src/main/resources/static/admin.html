@@ -92,15 +92,30 @@
 
     <div id="view-system" class="view-section active">
 
-        <div class="panel" style="border: 1px solid #4CAF50; margin-bottom: 20px; background: rgba(76, 175, 80, 0.05);">
-            <h2 style="color: #4CAF50;"><i class="fa-solid fa-folder-tree"></i> Course Architect</h2>
-            <p style="font-size: 13px; color: var(--text-2); margin-bottom: 15px;">Create new courses for students and teachers to enroll in.</p>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="new-course-code" placeholder="Course Code (e.g., CS101)" style="flex: 1;">
-                <input type="text" id="new-course-title" placeholder="Full Course Title" style="flex: 2;">
+        <div class="panel" style="border-left: 4px solid var(--gold); margin-bottom: 25px; background: rgba(212, 136, 10, 0.05);">
+            <h2 style="color: var(--gold);"><i class="fa-solid fa-sitemap"></i> Hive Architect</h2>
+            <div class="content-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+
+                <div style="padding-right: 20px; border-right: 1px solid rgba(255,255,255,0.1);">
+                    <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">1. Define Department</p>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="new-dept-name" placeholder="e.g. Computer Science" style="margin:0;">
+                        <button class="btn-gold" onclick="saveDept()" style="padding: 0 20px;">Create</button>
+                    </div>
+                </div>
+
+                <div>
+                    <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">2. Deploy Course Module</p>
+                    <select id="dept-selector" class="course-selector" style="margin-bottom: 10px;">
+                        <option value="">Select Department...</option>
+                    </select>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="new-course-code" placeholder="Code (CS101)" style="flex: 1;">
+                        <input type="text" id="new-course-title" placeholder="Module Title" style="flex: 2;">
+                    </div>
+                    <button class="btn-gold" style="width: 100%; margin-top: 10px;" onclick="saveCourse()">Deploy to Network</button>
+                </div>
             </div>
-            <textarea id="new-course-desc" rows="2" placeholder="Course Description..."></textarea>
-            <button class="btn-gold" style="width: 100%; background: linear-gradient(135deg, #4CAF50, #1b5e20);" onclick="createNewCourse()">Deploy Course to Network</button>
         </div>
 
         <div class="stats-row">
@@ -177,6 +192,10 @@
                 </form>
             </div>
         </div>
+        <div class="panel" style="margin-top: 20px;">
+            <h2>Existing Resources</h2>
+            <div id="admin-resources-container" style="display: grid; gap: 10px;">Loading...</div>
+        </div>
     </div>
 
     <div id="view-mod" class="view-section">
@@ -213,32 +232,59 @@
 
         if(tabId === 'system' || tabId === 'users' || tabId === 'mod') loadAdminData();
         if(tabId === 'progress') loadQuizResults();
-        if(tabId === 'resources') fetchAdminResources(); // New trigger added
+        if(tabId === 'resources') fetchAdminResources();
     }
 
-    // PHASE 4: CREATE COURSE LOGIC FOR ADMIN
-    async function createNewCourse() {
+    // 🟢 FIX: ARCHITECT JS - SAVE DEPARTMENT
+    async function saveDept() {
+        const name = document.getElementById('new-dept-name').value;
+        if(!name) return alert("Please enter a department name.");
+
+        try {
+            const res = await fetch('/api/hive/admin/departments', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name: name })
+            });
+            if(res.ok) {
+                alert("Department successfully registered.");
+                document.getElementById('new-dept-name').value = '';
+                loadAdminDepts(); // Refresh the dropdown
+            }
+        } catch (e) { alert("Network error."); }
+    }
+
+    // 🟢 FIX: ARCHITECT JS - SAVE COURSE
+    async function saveCourse() {
+        const deptId = document.getElementById('dept-selector').value;
         const code = document.getElementById('new-course-code').value;
         const title = document.getElementById('new-course-title').value;
-        const desc = document.getElementById('new-course-desc').value;
 
-        if(!code || !title) return alert("Course Code and Title are required.");
+        if(!deptId || !code || !title) return alert("Please complete all module fields.");
 
         try {
             const res = await fetch('/api/hive/admin/courses', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ courseCode: code, title: title, description: desc })
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ deptId: deptId, courseCode: code, title: title })
             });
-
             if(res.ok) {
-                alert("Course successfully deployed to the network!");
+                alert("Module deployed to department.");
                 document.getElementById('new-course-code').value = '';
                 document.getElementById('new-course-title').value = '';
-                document.getElementById('new-course-desc').value = '';
-            } else {
-                alert("Failed to deploy course.");
             }
-        } catch (e) { alert("Server error."); }
+        } catch (e) { alert("Network error."); }
+    }
+
+    // 🟢 FIX: ARCHITECT JS - LOAD DEPARTMENTS INTO SELECTOR
+    async function loadAdminDepts() {
+        try {
+            const res = await fetch('/api/hive/departments');
+            const depts = await res.json();
+            const selector = document.getElementById('dept-selector');
+            selector.innerHTML = '<option value="">Select Department...</option>' +
+                depts.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+        } catch (e) { console.error("Dept load failed"); }
     }
 
     async function loadAdminData() {
@@ -301,7 +347,6 @@
         } catch(e) {}
     }
 
-    // THE MISSING UPLOAD AND RESOURCE LOGIC
     async function fetchAdminResources() {
         try {
             const res = await fetch('/api/hive/resources');
@@ -326,7 +371,6 @@
         const fileInput = document.getElementById('r-file');
         if(!fileInput.files.length) return alert("Select a file.");
 
-        // Visual loading state
         const btn = document.querySelector('button[onclick="uploadFile()"]');
         btn.innerText = "Uploading...";
 
@@ -356,6 +400,8 @@
     function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
 
     loadAdminData();
+    loadAdminDepts(); // 🟢 Ensure Architect dropdown loads on startup
+
     function setTheme(themeName) { document.body.classList.remove('light-mode', 'midnight-mode', 'cyber-mode', 'aurora-mode'); if (themeName !== 'hive') { document.body.classList.add(themeName + '-mode'); } localStorage.setItem('hive_theme', themeName); }
     function initTheme() { const savedTheme = localStorage.getItem('hive_theme'); if (savedTheme) setTheme(savedTheme); }
     initTheme();

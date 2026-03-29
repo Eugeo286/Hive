@@ -3,52 +3,62 @@ package org.example;
 import java.time.LocalDateTime;
 
 public class Question {
-    private int           id;
-    private String        title;
-    private String        subject;
-    private String        difficulty;
-    private String        authorName;
-    private boolean       answered;
+    private int id;
+    private String title;
+    private String subject;
+    private String difficulty;
+    private String authorName;
+    private boolean answered;
     private LocalDateTime createdAt;
+    private String answerText;
 
-    // 🔴 ADDED: This holds the text of the answer so the frontend can display it!
-    private String        answerText;
-
-    public Question() {}
-    public Question(String title, String subject, String difficulty, String authorName) {
-        this.title      = title;
-        this.subject    = subject;
-        this.difficulty = difficulty;
-        this.authorName = authorName;
-        this.answered   = false;
-    }
-
-    public int           getId()                          { return id; }
-    public void          setId(int id)                    { this.id = id; }
-    public String        getTitle()                       { return title; }
-    public void          setTitle(String t)               { this.title = t; }
-    public String        getSubject()                     { return subject; }
-    public void          setSubject(String s)             { this.subject = s; }
-    public String        getDifficulty()                  { return difficulty; }
-    public void          setDifficulty(String d)          { this.difficulty = d; }
-    public String        getAuthorName()                  { return authorName; }
-    public void          setAuthorName(String a)          { this.authorName = a; }
-    public boolean       isAnswered()                     { return answered; }
-    public void          setAnswered(boolean a)           { this.answered = a; }
-    public LocalDateTime getCreatedAt()                   { return createdAt; }
-    public void          setCreatedAt(LocalDateTime t)    { this.createdAt = t; }
-
-    // 🔴 ADDED: Getters and Setters for the answer text
-    public String        getAnswerText()                  { return answerText; }
-    public void          setAnswerText(String text)       { this.answerText = text; }
-
-    // Add these variables to Question.java
+    // 🟢 ADD THESE NEW FIELDS
     private int courseId;
+    private String department;
     private String aiAnswer;
 
-    // Add these at the bottom of the file
-    public int getCourseId() { return courseId; }
-    public void setCourseId(int courseId) { this.courseId = courseId; }
-    public String getAiAnswer() { return aiAnswer; }
-    public void setAiAnswer(String aiAnswer) { this.aiAnswer = aiAnswer; }
+    // Existing Constructor (Update it or add a new one)
+    public Question(String title, String subject, String difficulty, String authorName) {
+        this.title = title;
+        this.subject = subject;
+        this.difficulty = difficulty;
+        this.authorName = authorName;
+    }
+
+    // 🟢 ADD THESE GETTERS AND SETTERS
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
+    }
+
+    public int getCourseId() {
+        return courseId;
+    }
+
+    public void setCourseId(int courseId) {
+        this.courseId = courseId;
+    }
+
+    public String getAiAnswer() {
+        return aiAnswer;
+    }
+
+    public void setAiAnswer(String aiAnswer) {
+        this.aiAnswer = aiAnswer;
+    }
+
+    // ... (Keep all your existing getters/setters for title, subject, id, etc.) ...
+
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
+    public String getTitle() { return title; }
+    public String getSubject() { return subject; }
+    public String getAuthorName() { return authorName; }
+    public boolean isAnswered() { return answered; }
+    public void setAnswered(boolean answered) { this.answered = answered; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setAnswerText(String answerText) { this.answerText = answerText; }
 }

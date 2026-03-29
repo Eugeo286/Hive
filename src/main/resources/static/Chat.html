@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Hive | Peer Chat Room</title>
+    <link rel="stylesheet" href="shared.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .chat-container { height: 70vh; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; background: rgba(0,0,0,0.2); border-radius: 15px; margin: 20px; position: relative; }
+        .msg { max-width: 70%; padding: 12px 18px; border-radius: 20px; font-size: 14px; position: relative; }
+        .msg.me { align-self: flex-end; background: var(--gold); color: white; border-bottom-right-radius: 2px; }
+        .msg.them { align-self: flex-start; background: rgba(255,255,255,0.1); color: white; border-bottom-left-radius: 2px; }
+        .msg-info { font-size: 10px; margin-bottom: 4px; opacity: 0.7; font-weight: bold; }
+        .msg-meta { display: flex; justify-content: flex-end; align-items: center; gap: 5px; font-size: 10px; margin-top: 4px; opacity: 0.8; }
+        .read-status { color: #38BDF8; }
+
+        #typing-indicator {
+            padding: 0 40px 10px 40px;
+            font-size: 12px;
+            color: var(--gold);
+            font-style: italic;
+            display: none;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        #jump-bottom {
+            position: fixed;
+            bottom: 100px;
+            right: 50px;
+            background: var(--gold);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 100;
+            display: none;
+            transition: transform 0.2s;
+        }
+        #jump-bottom:hover { transform: scale(1.1); }
+    </style>
+</head>
+<body class="light-mode">
+<div class="main" style="margin: 0; display: flex; flex-direction: column; height: 100vh;">
+    <div class="header" style="padding: 20px 40px; background: rgba(0,0,0,0.3);">
+        <div>
+            <button class="btn-action" onclick="window.location.href='student.html'"><i class="fa-solid fa-arrow-left"></i> Exit to Dashboard</button>
+            <h1 style="margin-top:10px;"><i class="fa-solid fa-comments"></i> Peer Learning Room</h1>
+        </div>
+    </div>
+
+    <div id="chat-messages" class="chat-container"></div>
+
+    <div id="typing-indicator">Someone is typing...</div>
+
+    <button id="jump-bottom" onclick="scrollToBottom()"><i class="fa-solid fa-arrow-down"></i></button>
+
+    <div style="padding: 20px 40px; display: flex; gap: 15px;">
+        <input type="text" id="chat-input" placeholder="Type your message..." style="flex: 1; margin: 0;">
+        <button class="btn-gold" onclick="sendChatMessage()" style="padding: 0 30px;"><i class="fa-solid fa-paper-plane"></i> Send</button>
+    </div>
+</div>
+
+<script>
+    const user = JSON.parse(localStorage.getItem('hive_user'));
+    const courseId = localStorage.getItem('chat_context_id');
+    const chatContainer = document.getElementById('chat-messages');
+    const jumpBtn = document.getElementById('jump-bottom');
+    const chatInput = document.getElementById('chat-input');
+    let typingTimer;
+
+    // --- SCROLL LOGIC ---
+    chatContainer.addEventListener('scroll', () => {
+        const distanceToBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
+        if (distanceToBottom > 200) {
+            jumpBtn.style.display = 'block';
+        } else {
+            jumpBtn.style.display = 'none';
+        }
+    });
+
+    function scrollToBottom() {
+        chatContainer.scrollTo({
+            top: chatContainer.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
+
+    // --- MESSAGE LOGIC ---
+    async function loadMessages() {
+        try {
+            const res = await fetch(`/api/hive/chat/course/${courseId}`);
+            const data = await res.json();
+
+            // Check if user is at bottom before re-rendering
+            const isAtBottom = chatContainer.scrollHeight - chatContainer.clientHeight <= chatContainer.scrollTop + 50;
+
+            chatContainer.innerHTML = data.map(m => {
+                const time = m.sentAt ? new Date(m.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                return `
+                    <div class="msg ${m.senderId === user.id ? 'me' : 'them'}">
+                        <div class="msg-info">${m.senderId === user.id ? 'You' : m.senderName}</div>
+                        <div class="msg-content">${m.content}</div>
+                        <div class="msg-meta">
+                            <span>${time}</span>
+                            ${m.senderId === user.id ? `<i class="fa-solid fa-check-double ${m.isRead ? 'read-status' : ''}"></i>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (isAtBottom) scrollToBottom();
+            if (data.length > 0) markAsRead();
+        } catch (e) { console.error("Load failed", e); }
+    }
+
+    async function markAsRead() {
+        await fetch(`/api/hive/chat/course/${courseId}/read`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ userId: user.id })
+        });
+    }
+
+    async function sendChatMessage() {
+        const input = document.getElementById('chat-input');
+        if(!input.value.trim()) return;
+
+        await fetch('/api/hive/chat/send', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ senderId: user.id, courseId: courseId, content: input.value })
+        });
+        input.value = '';
+        sendTypingStatus(false); // Clear typing status immediately on send
+        loadMessages();
+    }
+
+    // --- TYPING INDICATOR LOGIC ---
+    chatInput.addEventListener('input', () => {
+        sendTypingStatus(true);
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => sendTypingStatus(false), 3000);
+    });
+
+    async function sendTypingStatus(isTyping) {
+        fetch(`/api/hive/chat/course/${courseId}/typing`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ userId: user.id, userName: user.name, status: isTyping })
+        });
+    }
+
+    async function checkTyping() {
+        try {
+            const res = await fetch(`/api/hive/chat/course/${courseId}/typing-status`);
+            const typers = await res.json();
+            const indicator = document.getElementById('typing-indicator');
+            const others = typers.filter(name => name !== user.name);
+
+            if (others.length > 0) {
+                indicator.innerText = `${others.join(', ')} ${others.length > 1 ? 'are' : 'is'} typing...`;
+                indicator.style.display = 'block';
+            } else {
+                indicator.style.display = 'none';
+            }
+        } catch (e) { console.error("Typing check failed", e); }
+    }
+
+    // --- INITIALIZATION ---
+    // Single loop for efficiency
+    setInterval(() => {
+        loadMessages();
+        checkTyping();
+    }, 3000);
+
+    loadMessages();
+</script>
+</body>
+</html>

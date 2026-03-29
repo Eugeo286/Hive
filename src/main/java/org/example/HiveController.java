@@ -41,6 +41,7 @@ public class HiveController {
         if (u == null) return ResponseEntity.status(401).build();
 
         Map<String,Object> res = new LinkedHashMap<>();
+        res.put("id",     u.getId()); // Crucial for enrollment logic
         res.put("name",   u.getName());
         res.put("email",  u.getEmail());
         res.put("points", u.getPoints());
@@ -54,26 +55,29 @@ public class HiveController {
     }
 
     // ══════════════════════════════════════════════════════
-    // BROADCASTS
+    // QUESTIONS & ANSWERS (FIXED DUPLICATES)
     // ══════════════════════════════════════════════════════
 
-    @GetMapping("/broadcast/latest")
-    public ResponseEntity<Map<String, String>> getLatestAnnouncement() {
-        Map<String, String> announcement = contentDAO.getLatestAnnouncement();
-        return ResponseEntity.ok(announcement);
+    // Merged: Fetches either all or filtered by department
+    @GetMapping("/questions")
+    public List<Question> getQuestions(@RequestParam(required = false) String department) {
+        if (department != null && !department.isEmpty()) {
+            return contentDAO.getQuestionsByDepartment(department);
+        }
+        return contentDAO.getAllQuestions();
     }
 
-    // ══════════════════════════════════════════════════════
-    // QUESTIONS & ANSWERS
-    // ══════════════════════════════════════════════════════
+    // New specific endpoint for department filtering
+    @GetMapping("/questions/department")
+    public List<Question> getQuestionsByDept(@RequestParam String name) {
+        return contentDAO.getQuestionsByDepartment(name);
+    }
 
-    @GetMapping("/questions")
-    public List<Question> getAllQuestions() { return contentDAO.getAllQuestions(); }
-
+    // Merged: One single POST mapping for questions
     @PostMapping("/questions")
     public ResponseEntity<String> addQuestion(@RequestBody Question q) {
         contentDAO.saveQuestion(q);
-        return ResponseEntity.ok("Posted.");
+        return ResponseEntity.ok("Question deployed to the Hive department: " + q.getDepartment());
     }
 
     @DeleteMapping("/questions/{id}")
@@ -81,9 +85,6 @@ public class HiveController {
         contentDAO.deleteQuestion(id);
         return ResponseEntity.ok("Deleted.");
     }
-
-    @GetMapping("/questions/urgent")
-    public List<Question> getUrgent() { return contentDAO.getUnansweredOver24Hours(); }
 
     @PostMapping("/questions/{id}/answers")
     public ResponseEntity<String> postAnswer(@PathVariable int id, @RequestBody Map<String, String> body) {
@@ -94,12 +95,21 @@ public class HiveController {
     }
 
     // ══════════════════════════════════════════════════════
+    // NOTIFICATIONS (NEW)
+    // ══════════════════════════════════════════════════════
+
+    @GetMapping("/notifications/{userId}")
+    public List<Map<String, Object>> getNotifications(@PathVariable int userId) {
+        return contentDAO.getNotifications(userId);
+    }
+
+    // ══════════════════════════════════════════════════════
     // RESOURCES & UPLOADS
     // ══════════════════════════════════════════════════════
 
     @GetMapping("/resources")
     public List<Resource> getAllResources() {
-        return contentDAO.getResourcesByCourse(""); // Empty string matches all
+        return contentDAO.getResourcesByCourse("");
     }
 
     @GetMapping("/resources/{course}")
@@ -135,97 +145,32 @@ public class HiveController {
         }
     }
 
-    @DeleteMapping("/resources/{id}")
-    public ResponseEntity<String> deleteResource(@PathVariable int id) {
-        contentDAO.deleteResourceWithFile(id, UPLOAD_DIR);
-        return ResponseEntity.ok("Deleted.");
+    // ══════════════════════════════════════════════════════
+    // ADMIN: ARCHITECT ENDPOINTS
+    // ══════════════════════════════════════════════════════
+
+    @GetMapping("/departments")
+    public List<Map<String, Object>> getDepts() {
+        return contentDAO.getAllDepartments();
+    }
+
+    @PostMapping("/admin/departments")
+    public ResponseEntity<String> createDept(@RequestBody Map<String, String> payload) {
+        contentDAO.addDepartment(payload.get("name"));
+        return ResponseEntity.ok("Department created.");
+    }
+
+    @PostMapping("/admin/courses")
+    public ResponseEntity<String> createCourse(@RequestBody Map<String, Object> payload) {
+        int deptId = Integer.parseInt(payload.get("deptId").toString());
+        String code = payload.get("courseCode").toString();
+        String title = payload.get("title").toString();
+        contentDAO.addCourseToDept(deptId, code, title);
+        return ResponseEntity.ok("Module deployed.");
     }
 
     // ══════════════════════════════════════════════════════
-    // ASSIGNMENTS & SUBMISSIONS
-    // ══════════════════════════════════════════════════════
-
-    @GetMapping("/assignments/all")
-    public List<Assignment> getAllAssignments() {
-        return contentDAO.getAllAssignments();
-    }
-
-    @PostMapping("/assignments")
-    public ResponseEntity<String> postAssignment(@RequestBody Assignment a) {
-        contentDAO.saveAssignment(a);
-        return ResponseEntity.ok("Assignment posted.");
-    }
-
-    @PostMapping("/assignments/{id}/submit")
-    public ResponseEntity<String> submitAssignment(@PathVariable int id, @RequestBody Submission s) {
-        s.setAssignmentId(id);
-        contentDAO.saveSubmission(id, s);
-        return ResponseEntity.ok("Submitted.");
-    }
-
-    // ══════════════════════════════════════════════════════
-    // BOOKS (Open Library Proxy)
-    // ══════════════════════════════════════════════════════
-
-    @GetMapping("/books/{query}")
-    public ResponseEntity<String> searchBooks(@PathVariable String query) {
-        try {
-            String url = "https://openlibrary.org/search.json?q="
-                    + query.replace(" ", "+") + "&limit=6&fields=title,author_name,key";
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest req   = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
-            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
-            return ResponseEntity.ok(resp.body());
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("{\"error\":\"Offline\"}");
-        }
-    }
-
-    // ══════════════════════════════════════════════════════
-    // VIDEO SESSIONS
-    // ══════════════════════════════════════════════════════
-
-    @GetMapping("/sessions")
-    public List<VideoSession> getSessions() {
-        return contentDAO.getAllVideoSessions();
-    }
-
-    @PostMapping("/sessions")
-    public ResponseEntity<String> scheduleSession(@RequestBody VideoSession vs) {
-        String link = vs.getMeetingLink();
-        if (link != null && !link.startsWith("http")) vs.setMeetingLink("https://" + link);
-        contentDAO.saveVideoSession(vs);
-        return ResponseEntity.ok("Scheduled.");
-    }
-
-    @DeleteMapping("/sessions/{id}")
-    public ResponseEntity<String> deleteSession(@PathVariable int id) {
-        contentDAO.deleteVideoSession(id);
-        return ResponseEntity.ok("Cancelled.");
-    }
-
-    // ══════════════════════════════════════════════════════
-    // ANALYTICS & GAMIFICATION
-    // ══════════════════════════════════════════════════════
-
-    @GetMapping("/leaderboard")
-    public List<Student> leaderboard() { return userDAO.getLeaderboard(10); }
-
-    @GetMapping("/stats/subjects")
-    public Map<String,Long> subjectStats() { return contentDAO.getSubjectStats(); }
-
-    private String detectType(String name) {
-        if (name == null) return "file";
-        String f = name.toLowerCase();
-        if (f.endsWith(".pdf")) return "pdf";
-        if (f.endsWith(".ppt") || f.endsWith(".pptx")) return "slides";
-        if (f.endsWith(".png") || f.endsWith(".jpg")) return "image";
-        if (f.endsWith(".mp4")) return "video";
-        return "file";
-    }
-
-    // ══════════════════════════════════════════════════════
-    // COURSE ENDPOINTS
+    // CHAT & ENROLLMENT
     // ══════════════════════════════════════════════════════
 
     @GetMapping("/courses")
@@ -246,16 +191,6 @@ public class HiveController {
         return ResponseEntity.ok("Enrolled successfully!");
     }
 
-    @PostMapping("/admin/courses")
-    public ResponseEntity<String> createCourse(@RequestBody Course course) {
-        contentDAO.createCourse(course);
-        return ResponseEntity.ok("Course officially registered in The Hive.");
-    }
-
-    // ══════════════════════════════════════════════════════
-    // CHAT ENDPOINTS
-    // ══════════════════════════════════════════════════════
-
     @GetMapping("/chat/course/{courseId}")
     public List<Message> getCourseChat(@PathVariable int courseId) {
         return contentDAO.getMessagesForCourse(courseId);
@@ -273,26 +208,59 @@ public class HiveController {
     }
 
     // ══════════════════════════════════════════════════════
-    // AI Q&A ENDPOINTS
+    // AI Q&A
     // ══════════════════════════════════════════════════════
 
     @PostMapping("/questions/{id}/ask-ai")
     public ResponseEntity<Map<String, String>> requestAiAnswer(@PathVariable int id, @RequestBody Map<String, String> payload) {
         String questionText = payload.get("questionText");
+        String simulatedAiResponse = "Regarding '" + questionText + "': This is a core topic in your department. Check the suggested library resources for a deep dive!";
 
-        // --- AI GENERATION LOGIC ---
-        // In a production app, you would make an HTTP call to the OpenAI or Gemini API here.
-        // For now, we will generate a simulated context-aware response so you can build the UI.
-
-        String simulatedAiResponse = "Based on my knowledge base, regarding your question about '"
-                + questionText
-                + "': This is a common topic in this course. Ensure you check the course syllabus and review the core fundamentals. If you need a more specific code or math breakdown, please reply!";
-
-        // Save it to the database so it persists
         contentDAO.saveAiAnswer(id, simulatedAiResponse);
-
         Map<String, String> response = new HashMap<>();
         response.put("aiAnswer", simulatedAiResponse);
         return ResponseEntity.ok(response);
+    }
+
+    // --- Utility ---
+    private String detectType(String name) {
+        if (name == null) return "file";
+        String f = name.toLowerCase();
+        if (f.endsWith(".pdf")) return "pdf";
+        if (f.endsWith(".ppt") || f.endsWith(".pptx")) return "slides";
+        if (f.endsWith(".png") || f.endsWith(".jpg")) return "image";
+        if (f.endsWith(".mp4")) return "video";
+        return "file";
+    }
+
+    // ══════════════════════════════════════════════════════
+// CHAT ADVANCED FEATURES (Typing & Read Receipts)
+// ══════════════════════════════════════════════════════
+
+    @PostMapping("/chat/course/{courseId}/typing")
+    public ResponseEntity<String> updateTypingStatus(@PathVariable int courseId, @RequestBody Map<String, Object> payload) {
+        int userId = Integer.parseInt(payload.get("userId").toString());
+        String userName = payload.get("userName").toString();
+        boolean isTyping = (boolean) payload.get("status");
+
+        if (isTyping) {
+            contentDAO.setTyping(courseId, userId, userName);
+        } else {
+            contentDAO.removeTyping(courseId, userId);
+        }
+        return ResponseEntity.ok("Status updated");
+    }
+
+    @GetMapping("/chat/course/{courseId}/typing-status")
+    public List<String> getTypingStatus(@PathVariable int courseId) {
+        // Returns a list of names who typed in the last 5 seconds
+        return contentDAO.getActiveTypers(courseId);
+    }
+
+    @PostMapping("/chat/course/{courseId}/read")
+    public ResponseEntity<String> markMessagesRead(@PathVariable int courseId, @RequestBody Map<String, Integer> payload) {
+        int userId = payload.get("userId");
+        contentDAO.markAsRead(courseId, userId);
+        return ResponseEntity.ok("Marked as read");
     }
 }
