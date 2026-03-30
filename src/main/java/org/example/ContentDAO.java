@@ -8,19 +8,45 @@ import java.util.Map;
 
 public class ContentDAO {
 
+    public ContentDAO() {
+        // 🟢 THE AUTO-MIGRATION BOT
+        // This runs instantly when the server starts and automatically fixes your Railway database
+        // so you never get the "Unknown column" errors again.
+        try (Connection c = DBUtil.getConnection(); Statement s = c.createStatement()) {
+            s.execute("CREATE TABLE IF NOT EXISTS departments (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255))");
+            s.execute("CREATE TABLE IF NOT EXISTS typing_status (course_id INT, user_id INT, user_name VARCHAR(255), last_typed DATETIME, PRIMARY KEY(course_id, user_id))");
+            s.execute("INSERT IGNORE INTO departments (id, name) VALUES (1, 'Global Campus')");
+        } catch (Exception e) { }
+
+        try (Connection c = DBUtil.getConnection(); Statement s = c.createStatement()) {
+            s.execute("ALTER TABLE courses ADD COLUMN dept_id INT DEFAULT 1");
+        } catch (Exception e) {}
+
+        try (Connection c = DBUtil.getConnection(); Statement s = c.createStatement()) {
+            s.execute("INSERT IGNORE INTO courses (id, dept_id, course_code, title) VALUES (1, 1, 'GLB101', 'Global Hive')");
+        } catch (Exception e) {}
+
+        try (Connection c = DBUtil.getConnection(); Statement s = c.createStatement()) {
+            s.execute("ALTER TABLE messages ADD COLUMN sent_at DATETIME DEFAULT CURRENT_TIMESTAMP");
+        } catch (Exception e) {}
+
+        try (Connection c = DBUtil.getConnection(); Statement s = c.createStatement()) {
+            s.execute("ALTER TABLE messages ADD COLUMN is_read BOOLEAN DEFAULT FALSE");
+        } catch (Exception e) {}
+    }
+
     // ══════════════════════════════════════════════════════
     // QUESTIONS
     // ══════════════════════════════════════════════════════
 
     public void saveQuestion(Question q) {
-        // Added 'department' to the INSERT
         String sql = "INSERT INTO questions (title, subject, author_name, course_id, department, is_answered, created_at) VALUES (?,?,?,?,?,false,NOW())";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setString(1, q.getTitle());
             s.setString(2, q.getSubject());
             s.setString(3, q.getAuthorName());
             s.setInt(4, q.getCourseId());
-            s.setString(5, q.getDepartment()); // Store the chosen department
+            s.setString(5, q.getDepartment());
             s.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
     }
@@ -40,7 +66,8 @@ public class ContentDAO {
                 Timestamp ts = rs.getTimestamp("created_at");
                 if (ts != null) q.setCreatedAt(ts.toLocalDateTime());
                 q.setAnswerText(rs.getString("fetched_answer"));
-                q.setAiAnswer(rs.getString("ai_answer")); // Added to ensure AI answers show
+                q.setAiAnswer(rs.getString("ai_answer"));
+                q.setCourseId(rs.getInt("course_id"));
                 questions.add(q);
             }
         } catch (SQLException e) { e.printStackTrace(); }
@@ -49,13 +76,19 @@ public class ContentDAO {
 
     public List<Question> getQuestionsByDepartment(String dept) {
         List<Question> questions = new ArrayList<>();
-        // Filter questions where the department matches the user's department
         String sql = "SELECT * FROM questions WHERE department = ? ORDER BY created_at DESC";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setString(1, dept);
             ResultSet rs = s.executeQuery();
             while (rs.next()) {
-                // ... (your existing mapping logic)
+                Question q = new Question(rs.getString("title"), rs.getString("subject"), "Medium", rs.getString("author_name"));
+                q.setId(rs.getInt("id"));
+                q.setAnswered(rs.getBoolean("is_answered"));
+                Timestamp ts = rs.getTimestamp("created_at");
+                if (ts != null) q.setCreatedAt(ts.toLocalDateTime());
+                q.setAiAnswer(rs.getString("ai_answer"));
+                q.setCourseId(rs.getInt("course_id"));
+                questions.add(q);
             }
         } catch (SQLException e) { e.printStackTrace(); }
         return questions;
@@ -140,7 +173,6 @@ public class ContentDAO {
     // NOTIFICATIONS
     // ══════════════════════════════════════════════════════
 
-    // 🟢 NEW: Added Notification Methods
     public void addNotification(int userId, String message) {
         String sql = "INSERT INTO notifications (user_id, message) VALUES (?, ?)";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
@@ -563,7 +595,7 @@ public class ContentDAO {
     // ══════════════════════════════════════════════════════
 
     public void saveChatMessage(Message msg) {
-        // FIXED: Added 'sent_at' and 'NOW()' so the database knows when the chat was sent!
+        // 🟢 FIX: Added 'sent_at' and 'NOW()' so the database knows when the chat was sent!
         String sql = "INSERT INTO messages (sender_id, course_id, content, sent_at) VALUES (?, ?, ?, NOW())";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setInt(1, msg.getSenderId());
@@ -575,7 +607,8 @@ public class ContentDAO {
 
     public List<Message> getMessagesForCourse(int courseId) {
         List<Message> list = new ArrayList<>();
-        String sql = "SELECT m.*, u.name AS sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.course_id = ? ORDER BY m.sent_at ASC";
+        // 🟢 FIX: Changed 'u.name' to 'u.username' to match the database schema
+        String sql = "SELECT m.*, u.username AS sender_name FROM messages m JOIN users u ON m.sender_id = u.id WHERE m.course_id = ? ORDER BY m.sent_at ASC";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setInt(1, courseId);
             ResultSet rs = s.executeQuery();
@@ -585,6 +618,9 @@ public class ContentDAO {
                 msg.setSenderName(rs.getString("sender_name"));
                 Timestamp ts = rs.getTimestamp("sent_at");
                 if (ts != null) msg.setSentAt(ts.toLocalDateTime());
+
+                try { msg.setRead(rs.getBoolean("is_read")); } catch (Exception ignored) {}
+
                 list.add(msg);
             }
         } catch (SQLException e) { e.printStackTrace(); }
@@ -605,8 +641,8 @@ public class ContentDAO {
     }
 
     // ══════════════════════════════════════════════════════
-// ADMIN: DEPARTMENT & COURSE MANAGEMENT
-// ══════════════════════════════════════════════════════
+    // ADMIN: DEPARTMENT & COURSE MANAGEMENT
+    // ══════════════════════════════════════════════════════
 
     public void addDepartment(String name) {
         String sql = "INSERT INTO departments (name) VALUES (?)";
@@ -639,9 +675,10 @@ public class ContentDAO {
             s.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
     }
+
     // ══════════════════════════════════════════════════════
-// ADVANCED CHAT LOGIC (FIX FOR CONTROLLER ERRORS)
-// ══════════════════════════════════════════════════════
+    // ADVANCED CHAT LOGIC
+    // ══════════════════════════════════════════════════════
 
     public void setTyping(int courseId, int userId, String userName) {
         String sql = "REPLACE INTO typing_status (course_id, user_id, user_name, last_typed) VALUES (?, ?, ?, NOW())";
@@ -664,7 +701,6 @@ public class ContentDAO {
 
     public List<String> getActiveTypers(int courseId) {
         List<String> typers = new ArrayList<>();
-        // Only get people who typed in the last 6 seconds
         String sql = "SELECT user_name FROM typing_status WHERE course_id = ? AND last_typed > NOW() - INTERVAL 6 SECOND";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setInt(1, courseId);
@@ -675,7 +711,6 @@ public class ContentDAO {
     }
 
     public void markAsRead(int courseId, int userId) {
-        // Marks messages in this course NOT sent by you as read
         String sql = "UPDATE messages SET is_read = true WHERE course_id = ? AND sender_id != ?";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setInt(1, courseId);
