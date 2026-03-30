@@ -16,23 +16,36 @@
         /* RESTORED STYLE FOR ROLE SELECTOR */
         .role-select { background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: var(--gold); padding: 5px 10px; border-radius: 5px; cursor: pointer; outline: none; }
 
-        /* 🟢 FIX: Ensure input text is white and visible */
-        input[type="text"], select, textarea {
+        /* 🟢 FIX: Ensure input text, dropdowns, and textareas are bright white and visible */
+        input[type="text"], input[type="password"], select, textarea {
             color: white !important;
             background: rgba(255, 255, 255, 0.05) !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            padding: 10px;
         }
         select option {
             background-color: #1c222d !important;
             color: white !important;
         }
+        ::placeholder { color: rgba(255,255,255,0.5) !important; }
     </style>
 </head>
 <body class="light-mode">
 <div class="hive-watermark">HIVE</div>
 
 <div class="sidebar" id="sidebar">
-    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 40px; padding: 20px;">
+    <div class="theme-switcher" style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
+        <p style="font-size: 11px; color: var(--text-2); margin-bottom: 10px; text-transform: uppercase;">Theme</p>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="setTheme('light')" class="theme-btn" title="Light Mode" style="background:#fff; border:1px solid #ccc; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+            <button onclick="setTheme('hive')" class="theme-btn" title="Hive Classic" style="background:#D4880A; border:none; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+            <button onclick="setTheme('midnight')" class="theme-btn" title="Midnight" style="background:#1C222D; border:1px solid #38BDF8; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+            <button onclick="setTheme('cyber')" class="theme-btn" title="Cyberpunk" style="background: linear-gradient(135deg, #EC4899, #8B5CF6); border:none; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+            <button onclick="setTheme('aurora')" class="theme-btn" title="Aurora" style="background: linear-gradient(135deg, #10B981, #06B6D4); border:none; width:25px; height:25px; border-radius:50%; cursor:pointer;"></button>
+        </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 40px; padding: 0 20px;">
         <div class="sb-hex" style="background: #4CAF50;"><i class="fa-solid fa-bolt"></i></div>
         <div class="brand-title">OVERSEER</div>
     </div>
@@ -354,6 +367,20 @@
 
     function logout() { localStorage.removeItem('hive_user'); window.location.href = "index.html"; }
 
+    // 🟢 FIX: THEME LOGIC ADDED
+    function setTheme(themeName) {
+        document.body.classList.remove('light-mode', 'midnight-mode', 'cyber-mode', 'aurora-mode');
+        if (themeName !== 'hive') { document.body.classList.add(themeName + '-mode'); }
+        localStorage.setItem('hive_theme', themeName);
+    }
+
+    function initTheme() {
+        const savedTheme = localStorage.getItem('hive_theme');
+        if (savedTheme) setTheme(savedTheme);
+    }
+
+    // Initialize all functions
+    initTheme();
     loadAdminData();
     loadCoursesForDropdown();
     loadTeachersForDropdown();
