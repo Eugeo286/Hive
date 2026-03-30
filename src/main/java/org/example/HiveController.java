@@ -220,7 +220,7 @@ public class HiveController {
         } else {
             try {
                 RestTemplate restTemplate = new RestTemplate();
-                String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=" + apiKey;
+                String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + apiKey;
                 String safeQuestion = questionText.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", " ");
 
                 String requestBody = "{"
