@@ -216,13 +216,30 @@ public class HiveController {
         String aiAnswer;
 
         if (apiKey == null || apiKey.isEmpty()) {
-            aiAnswer = "I am the Hive AI. To utilize my full intelligence, please configure the GEMINI_API_KEY in your Railway server variables.";
+            aiAnswer = "⚠️ Hivemind AI is offline. The administrator needs to configure the GEMINI_API_KEY in Railway Variables.";
         } else {
             try {
                 RestTemplate restTemplate = new RestTemplate();
                 String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;
 
-                String requestBody = "{\"contents\": [{\"parts\":[{\"text\": \"You are an AI tutor for a university portal. Answer this student's question clearly and educationally: " + questionText.replace("\"", "\\\"") + "\"}]}]}";
+                String safeQuestion = questionText.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", " ");
+
+                String requestBody = "{"
+                        + "\"contents\": [{"
+                        + "\"parts\": [{"
+                        + "\"text\": \"You are Hivemind AI, a smart and friendly university tutor built into The Hive learning portal. "
+                        + "A student has just asked you a question. Your job is to give a clear, helpful, and educational answer. "
+                        + "Follow these rules strictly:\\n"
+                        + "1. Start your answer directly — do NOT say things like 'Great question!' or 'Of course!'\\n"
+                        + "2. Use simple language a university student can easily understand.\\n"
+                        + "3. If the topic has steps or a list, format it with numbered points.\\n"
+                        + "4. Give a real-world example if it helps explain the concept.\\n"
+                        + "5. Keep your answer under 250 words.\\n"
+                        + "6. End with one follow-up tip or encouragement for the student.\\n"
+                        + "Student question: " + safeQuestion + "\""
+                        + "}]"
+                        + "}]"
+                        + "}";
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.set("Content-Type", "application/json");
@@ -236,7 +253,7 @@ public class HiveController {
                 aiAnswer = (String) parts.get(0).get("text");
 
             } catch (Exception e) {
-                aiAnswer = "I experienced a network disruption connecting to Google servers. Please try asking again later.";
+                aiAnswer = "🔌 Hivemind AI couldn't reach Google servers. Error: " + e.getMessage() + ". Please try again in a moment.";
             }
         }
 
