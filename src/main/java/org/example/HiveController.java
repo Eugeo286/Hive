@@ -253,7 +253,11 @@ public class HiveController {
                 aiAnswer = (String) parts.get(0).get("text");
 
             } catch (Exception e) {
-                aiAnswer = "🔌 Hivemind AI couldn't reach Google servers. Error: " + e.getMessage() + ". Please try again in a moment.";
+                if (e.getMessage() != null && e.getMessage().contains("429")) {
+                    aiAnswer = "⏳ Hivemind AI is taking a short break due to high demand. Please try again in a minute, or post your question to the community feed for a peer answer!";
+                } else {
+                    aiAnswer = "🔌 Hivemind AI couldn't reach Google servers. Please try again in a moment.";
+                }
             }
         }
 
