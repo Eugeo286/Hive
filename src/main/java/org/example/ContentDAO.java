@@ -563,7 +563,8 @@ public class ContentDAO {
     // ══════════════════════════════════════════════════════
 
     public void saveChatMessage(Message msg) {
-        String sql = "INSERT INTO messages (sender_id, course_id, content) VALUES (?, ?, ?)";
+        // FIXED: Added 'sent_at' and 'NOW()' so the database knows when the chat was sent!
+        String sql = "INSERT INTO messages (sender_id, course_id, content, sent_at) VALUES (?, ?, ?, NOW())";
         try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
             s.setInt(1, msg.getSenderId());
             s.setInt(2, msg.getCourseId());

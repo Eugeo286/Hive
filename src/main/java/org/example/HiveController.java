@@ -108,8 +108,9 @@ public class HiveController {
 
     @DeleteMapping("/resources/{id}")
     public ResponseEntity<String> deleteResource(@PathVariable int id) {
-        contentDAO.deleteResource(id);
-        return ResponseEntity.ok("Resource deleted.");
+        // UPGRADED: Now actually deletes the physical file from the server hard drive!
+        contentDAO.deleteResourceWithFile(id, UPLOAD_DIR);
+        return ResponseEntity.ok("Resource and file permanently deleted.");
     }
 
     // ══════════════════════════════════════════════════════
@@ -251,7 +252,6 @@ public class HiveController {
     // ══════════════════════════════════════════════════════
     @GetMapping("/notifications/{userId}")
     public ResponseEntity<List<Map<String,String>>> getNotifications(@PathVariable int userId) {
-        // Fallback responder to ensure the student bell icon doesn't crash if the notification table isn't built yet
         List<Map<String,String>> notifs = new ArrayList<>();
         notifs.add(Map.of("message", "Welcome to your dashboard! Keep an eye here for future alerts and assignment updates."));
         return ResponseEntity.ok(notifs);
@@ -311,7 +311,7 @@ public class HiveController {
     }
 
     // ══════════════════════════════════════════════════════
-    // CHAT ENGINE
+    // CHAT ENGINE (RESTORED TYPING INDICATORS)
     // ══════════════════════════════════════════════════════
     @GetMapping("/chat/course/{courseId}")
     public List<Message> getChat(@PathVariable int courseId) { return contentDAO.getMessagesForCourse(courseId); }
@@ -321,5 +321,22 @@ public class HiveController {
         Message msg = new Message(Integer.parseInt(payload.get("senderId").toString()), Integer.parseInt(payload.get("courseId").toString()), payload.get("content").toString());
         contentDAO.saveChatMessage(msg);
         return ResponseEntity.ok("Sent.");
+    }
+
+    @PostMapping("/chat/course/{courseId}/typing")
+    public ResponseEntity<String> updateTyping(@PathVariable int courseId, @RequestBody Map<String, Object> p) {
+        contentDAO.setTyping(courseId, (int)p.get("userId"), (String)p.get("userName"));
+        return ResponseEntity.ok("Updated.");
+    }
+
+    @GetMapping("/chat/course/{courseId}/typing-status")
+    public List<String> getTyping(@PathVariable int courseId) {
+        return contentDAO.getActiveTypers(courseId);
+    }
+
+    @PostMapping("/chat/course/{courseId}/read")
+    public ResponseEntity<String> markRead(@PathVariable int courseId, @RequestBody Map<String, Integer> p) {
+        contentDAO.markAsRead(courseId, p.get("userId"));
+        return ResponseEntity.ok("Read.");
     }
 }
