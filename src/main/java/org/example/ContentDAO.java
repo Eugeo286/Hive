@@ -627,6 +627,16 @@ public class ContentDAO {
         return list;
     }
 
+    public boolean deleteChatMessage(int messageId, int userId) {
+        // Security check: Only delete if the user requesting it is the actual sender
+        String sql = "DELETE FROM messages WHERE id = ? AND sender_id = ?";
+        try (Connection c = DBUtil.getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, messageId);
+            s.setInt(2, userId);
+            return s.executeUpdate() > 0;
+        } catch (SQLException e) { e.printStackTrace(); return false; }
+    }
+
     // ══════════════════════════════════════════════════════
     // AI ENGINE
     // ══════════════════════════════════════════════════════

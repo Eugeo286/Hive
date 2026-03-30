@@ -136,7 +136,13 @@
         <div style="color: gray; text-align: center; margin-top: 20px;">Select a subject to view chat.</div>
       </div>
 
-      <div style="display: flex; gap: 10px;">
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <input type="file" id="chat-file-input" style="display: none;" onchange="handleChatFileUpload()">
+
+        <button class="btn-action" style="padding: 10px 15px; border-color: var(--primary); color: var(--primary);" onclick="document.getElementById('chat-file-input').click()" title="Attach File">
+          <i class="fa-solid fa-paperclip"></i>
+        </button>
+
         <input type="text" id="chat-panel-input" placeholder="Type a message..." style="margin: 0; flex: 1;">
         <button class="btn-gold" onclick="sendPanelChat()">Send</button>
       </div>
@@ -345,23 +351,66 @@
           const messages = await res.json();
           const chatBox = document.getElementById('chat-panel-messages');
 
-          // Check scroll position to avoid jumpiness
           const isAtBottom = chatBox.scrollHeight - chatBox.clientHeight <= chatBox.scrollTop + 50;
 
           chatBox.innerHTML = messages.map(m => {
               const isMe = m.senderId === Number(user.id);
               const timeStr = m.sentAt ? new Date(m.sentAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
+              // Only show the trash icon if the message belongs to the logged-in user
+              const deleteBtn = isMe ? `<i class="fa-solid fa-trash" style="cursor:pointer; margin-left:10px; color:rgba(255,255,255,0.4);" onclick="deleteChatMessage(${m.id})" title="Delete Message"></i>` : '';
+
               return `
               <div class="msg ${isMe ? 'me' : 'them'}">
                   ${!isMe ? `<div class="msg-info">${m.senderName}</div>` : ''}
-                  ${m.content}
-                  <span class="msg-time">${timeStr} ${isMe ? '<i class="fa-solid fa-check-double" style="color:#53bdeb; margin-left:3px;"></i>' : ''}</span>
+                  <div>${m.content}</div>
+                  <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 5px;">
+                      <span class="msg-time" style="margin:0;">${timeStr} ${isMe ? '<i class="fa-solid fa-check-double" style="color:#53bdeb; margin-left:3px;"></i>' : ''}</span>
+                      ${deleteBtn}
+                  </div>
               </div>`;
           }).join('') || "<div style='color: gray; text-align: center; margin-top: 20px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; align-self: center;'>Be the first to say hello!</div>";
 
           if(isAtBottom) chatBox.scrollTop = chatBox.scrollHeight;
       } catch (e) { console.error("Chat sync failed"); }
+  }
+
+  // NEW: Delete Message Logic
+  async function deleteChatMessage(msgId) {
+      if(confirm("Delete this message?")) {
+          await fetch(`/api/hive/chat/${msgId}/${user.id}`, { method: 'DELETE' });
+          loadPanelChat(); // Refresh chat after deletion
+      }
+  }
+
+  // NEW: File Upload Logic
+  async function handleChatFileUpload() {
+      const fileInput = document.getElementById('chat-file-input');
+      if(!fileInput.files.length) return;
+      const subjectId = document.getElementById('chat-subject-select').value;
+      if(!subjectId) return alert("Please select a subject chat first.");
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      document.getElementById('chat-panel-input').placeholder = "Uploading file...";
+
+      try {
+          const res = await fetch('/api/hive/chat/upload', { method: 'POST', body: formData });
+          const data = await res.json();
+          if(data.url) {
+              // Create a clickable file link and send it automatically as a chat message
+              const fileLink = `<a href="${data.url}" target="_blank" style="color: inherit; text-decoration: underline; font-weight: bold;"><i class="fa-solid fa-file"></i> ${data.filename}</a>`;
+              await fetch('/api/hive/chat/send', {
+                  method: 'POST', headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({ senderId: user.id, courseId: subjectId, content: fileLink })
+              });
+              loadPanelChat(); // Refresh chat to show the new file
+          }
+      } catch(e) { alert("Upload failed."); }
+
+      document.getElementById('chat-panel-input').placeholder = "Type a message...";
+      fileInput.value = ''; // Reset the input
   }
 
   async function sendPanelChat() {

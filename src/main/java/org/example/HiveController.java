@@ -108,7 +108,6 @@ public class HiveController {
 
     @DeleteMapping("/resources/{id}")
     public ResponseEntity<String> deleteResource(@PathVariable int id) {
-        // UPGRADED: Now actually deletes the physical file from the server hard drive!
         contentDAO.deleteResourceWithFile(id, UPLOAD_DIR);
         return ResponseEntity.ok("Resource and file permanently deleted.");
     }
@@ -135,7 +134,6 @@ public class HiveController {
             s.setInt(1, deptId); s.setString(2, code); s.setString(3, title);
             s.executeUpdate();
 
-            // If the Admin selected a teacher, auto-enroll them immediately
             if (payload.containsKey("teacherId") && payload.get("teacherId") != null && !payload.get("teacherId").toString().isEmpty()) {
                 java.sql.ResultSet rs = s.getGeneratedKeys();
                 if (rs.next()) {
@@ -203,9 +201,8 @@ public class HiveController {
 
     @PostMapping("/answers/{id}/verify")
     public ResponseEntity<String> verifyPeerAnswer(@PathVariable int id) {
-        // Officially verify peer answer
         try (java.sql.Connection c = DBUtil.getConnection();
-             java.sql.PreparedStatement s = c.prepareStatement("UPDATE answers SET is_verified = TRUE WHERE id = ?")) {
+             java.sql.PreparedStatement s = c.prepareStatement("UPDATE answers SET verified = TRUE WHERE id = ?")) {
             s.setInt(1, id);
             s.executeUpdate();
         } catch(Exception e) {}
@@ -215,11 +212,11 @@ public class HiveController {
     @PostMapping("/questions/{id}/ask-ai")
     public ResponseEntity<Map<String, String>> requestAiAnswer(@PathVariable int id, @RequestBody Map<String, String> payload) {
         String questionText = payload.get("questionText");
-        String apiKey = System.getenv("GEMINI_API_KEY"); // Set this in Railway Variables!
+        String apiKey = System.getenv("GEMINI_API_KEY");
         String aiAnswer;
 
         if (apiKey == null || apiKey.isEmpty()) {
-            aiAnswer = "I am the Hive AI. To utilize my full intelligence, please configure the GEMINI_API_KEY in your Railway server variables. For now, please rely on your peers and faculty for answers.";
+            aiAnswer = "I am the Hive AI. To utilize my full intelligence, please configure the GEMINI_API_KEY in your Railway server variables.";
         } else {
             try {
                 RestTemplate restTemplate = new RestTemplate();
@@ -248,13 +245,11 @@ public class HiveController {
     }
 
     // ══════════════════════════════════════════════════════
-    // GENERAL FETCHERS, ASSIGNMENTS & FILE UPLOAD
+    // NOTIFICATIONS, ASSIGNMENTS & FILE UPLOAD
     // ══════════════════════════════════════════════════════
     @GetMapping("/notifications/{userId}")
-    public ResponseEntity<List<Map<String,String>>> getNotifications(@PathVariable int userId) {
-        List<Map<String,String>> notifs = new ArrayList<>();
-        notifs.add(Map.of("message", "Welcome to your dashboard! Keep an eye here for future alerts and assignment updates."));
-        return ResponseEntity.ok(notifs);
+    public ResponseEntity<List<Map<String, Object>>> getNotifications(@PathVariable int userId) {
+        return ResponseEntity.ok(contentDAO.getNotifications(userId));
     }
 
     @GetMapping("/assignments/all")
@@ -311,7 +306,7 @@ public class HiveController {
     }
 
     // ══════════════════════════════════════════════════════
-    // CHAT ENGINE (RESTORED TYPING INDICATORS)
+    // CHAT ENGINE (FULL TYPING & FILE LOGIC)
     // ══════════════════════════════════════════════════════
     @GetMapping("/chat/course/{courseId}")
     public List<Message> getChat(@PathVariable int courseId) { return contentDAO.getMessagesForCourse(courseId); }
@@ -338,5 +333,26 @@ public class HiveController {
     public ResponseEntity<String> markRead(@PathVariable int courseId, @RequestBody Map<String, Integer> p) {
         contentDAO.markAsRead(courseId, p.get("userId"));
         return ResponseEntity.ok("Read.");
+    }
+
+    @DeleteMapping("/chat/{messageId}/{userId}")
+    public ResponseEntity<String> deleteChatMessage(@PathVariable int messageId, @PathVariable int userId) {
+        if (contentDAO.deleteChatMessage(messageId, userId)) {
+            return ResponseEntity.ok("Deleted.");
+        }
+        return ResponseEntity.status(403).body("Unauthorized.");
+    }
+
+    @PostMapping("/chat/upload")
+    public ResponseEntity<Map<String,String>> uploadChatFile(@RequestParam("file") MultipartFile file) {
+        try {
+            File dir = new File(UPLOAD_DIR);
+            if (!dir.exists()) dir.mkdirs();
+            String safeName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            Files.write(Paths.get(UPLOAD_DIR + safeName), file.getBytes());
+            return ResponseEntity.ok(Map.of("url", "/uploads/" + safeName, "filename", file.getOriginalFilename()));
+        } catch (IOException e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Upload failed"));
+        }
     }
 }
